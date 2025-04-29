@@ -1,8 +1,8 @@
-# Murmur - Connect Through Conversation
+# Murmur - Real-Time Chat Application
 
 A sophisticated real-time messaging platform built with the MERN stack (MongoDB, Express.js, React.js, Node.js) and Socket.IO for seamless communication.
 
-![Murmur App Banner](https://i.imgur.com/placeholder-image.jpg)
+![Murmur App Banner](frontend/public/preview.png)
 
 ## ✨ Key Features
 
@@ -132,11 +132,3 @@ murmur/
 3. Commit your changes (`git commit -m 'Add exciting new feature'`).
 4. Push to the branch (`git push origin feature-branch`).
 5. Open a pull request with detailed description.
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 📧 Contact
-
-For questions or support, please contact [your-email@example.com](mailto:your-email@example.com).
