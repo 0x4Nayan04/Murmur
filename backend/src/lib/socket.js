@@ -2,8 +2,6 @@ import { Server } from "socket.io";
 import http from "http";
 import express from "express";
 import cookieParser from "cookie-parser";
-import jwt from "jsonwebtoken";
-import User from "../models/user.model.js";
 
 const app = express();
 app.use(cookieParser());
@@ -30,7 +28,9 @@ io.on("connection", (socket) => {
   console.log("A user connected", socket.id);
 
   const userId = socket.handshake.query.userId;
-  if (userId) userSocketMap[userId] = socket.id;
+  if (userId) {
+    userSocketMap[userId] = socket.id;
+  } 
 
   // io.emit() is used to send events to all the connected clients
   io.emit("getOnlineUsers", Object.keys(userSocketMap));

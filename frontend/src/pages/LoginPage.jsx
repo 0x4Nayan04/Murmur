@@ -27,7 +27,8 @@ const LoginPage = () => {
             <div className="flex flex-col items-center gap-2 group">
               <div
                 className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20
-              transition-colors">
+              transition-colors"
+              >
                 <MessageSquare className="w-6 h-6 text-primary" />
               </div>
               <h1 className="text-2xl font-bold mt-2">Welcome Back!</h1>
@@ -67,7 +68,8 @@ const LoginPage = () => {
                 </label>
                 <Link
                   to="/forgot-password"
-                  className="text-xs text-primary hover:underline"></Link>
+                  className="text-xs text-primary hover:underline"
+                ></Link>
               </div>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -86,7 +88,8 @@ const LoginPage = () => {
                 <button
                   type="button"
                   className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                  onClick={() => setShowPassword(!showPassword)}>
+                  onClick={() => setShowPassword(!showPassword)}
+                >
                   {showPassword ? (
                     <EyeOff className="h-5 w-5 text-base-content/40" />
                   ) : (
@@ -99,7 +102,8 @@ const LoginPage = () => {
             <button
               type="submit"
               className="btn btn-primary w-full hover:brightness-105 transition-all"
-              disabled={isLoggingIn}>
+              disabled={isLoggingIn}
+            >
               {isLoggingIn ? (
                 <>
                   <Loader2 className="h-5 w-5 animate-spin" />
@@ -116,7 +120,8 @@ const LoginPage = () => {
               New to Murmur?{" "}
               <Link
                 to="/signup"
-                className="link link-primary font-medium hover:underline">
+                className="link link-primary font-medium hover:underline"
+              >
                 Create an account
               </Link>
             </p>
