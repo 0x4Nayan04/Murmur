@@ -65,7 +65,8 @@ const ProfilePage = () => {
                         ? "animate-pulse pointer-events-none opacity-70"
                         : "hover:scale-110"
                     }
-                  `}>
+                  `}
+                >
                   <Camera className="w-5 h-5 text-primary-content" />
                   <input
                     type="file"
