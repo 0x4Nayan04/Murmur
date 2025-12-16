@@ -1,4 +1,4 @@
-import { Phone, Video, X, Circle, MoreVertical } from "lucide-react";
+import { Circle, X } from "lucide-react";
 import { useAuthStore } from "../store/useAuthStore";
 import { useChatStore } from "../store/useChatStore";
 
@@ -50,7 +50,8 @@ const ChatHeader = () => {
           {/* Close button */}
           <button
             onClick={() => setSelectedUser(null)}
-            className="btn btn-sm btn-circle btn-ghost hover:bg-base-300">
+            className="btn btn-sm btn-circle btn-ghost hover:bg-base-300"
+          >
             <X size={20} />
           </button>
         </div>

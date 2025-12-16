@@ -19,7 +19,7 @@ axiosInstance.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 // Add response interceptor to handle common errors
@@ -33,5 +33,5 @@ axiosInstance.interceptors.response.use(
       console.log("Unauthorized access - you may need to log in again");
     }
     return Promise.reject(error);
-  }
+  },
 );

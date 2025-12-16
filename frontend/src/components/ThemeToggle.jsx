@@ -23,7 +23,8 @@ const ThemeToggle = () => {
       onClick={toggleTheme}
       className="relative p-2 rounded-full bg-base-200 hover:bg-base-300 transition-colors duration-300 group"
       aria-label="Toggle theme"
-      type="button">
+      type="button"
+    >
       <div className="relative size-5 overflow-hidden">
         <Sun
           className={`absolute size-full transform transition-all duration-500 ${

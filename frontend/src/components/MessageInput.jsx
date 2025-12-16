@@ -1,7 +1,7 @@
+import { Image, Send, X } from "lucide-react";
 import { useRef, useState } from "react";
-import { useChatStore } from "../store/useChatStore";
-import { Image, Send, Smile, X } from "lucide-react";
 import toast from "react-hot-toast";
+import { useChatStore } from "../store/useChatStore";
 
 const MessageInput = () => {
   const [text, setText] = useState("");
@@ -64,7 +64,8 @@ const MessageInput = () => {
               onClick={removeImage}
               className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-base-200 hover:bg-base-300
               flex items-center justify-center shadow-md transition-colors duration-200"
-              type="button">
+              type="button"
+            >
               <X className="size-3.5" />
             </button>
           </div>
@@ -90,7 +91,8 @@ const MessageInput = () => {
                         ? "text-emerald-500"
                         : "text-base-content/70 hover:text-base-content"
                     }`}
-              onClick={() => fileInputRef.current?.click()}>
+              onClick={() => fileInputRef.current?.click()}
+            >
               <Image size={18} />
             </button>
           </div>
@@ -111,7 +113,8 @@ const MessageInput = () => {
               ? "btn-neutral opacity-50"
               : "btn-primary text-primary-content"
           }`}
-          disabled={!text.trim() && !imagePreview}>
+          disabled={!text.trim() && !imagePreview}
+        >
           <Send size={18} />
         </button>
       </form>

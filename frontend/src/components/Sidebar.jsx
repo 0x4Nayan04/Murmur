@@ -19,7 +19,7 @@ const Sidebar = () => {
   const filteredUsers = users
     .filter((user) => !showOnlineOnly || onlineUsers.includes(user._id))
     .filter((user) =>
-      user.fullName.toLowerCase().includes(searchQuery.toLowerCase())
+      user.fullName.toLowerCase().includes(searchQuery.toLowerCase()),
     );
 
   if (isUsersLoading) return <SidebarSkeleton />;
@@ -59,7 +59,8 @@ const Sidebar = () => {
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery("")}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-base-200">
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-base-200"
+              >
                 <X className="size-3.5" />
               </button>
             )}
@@ -96,7 +97,8 @@ const Sidebar = () => {
                     ? "bg-primary/10 border border-primary/20"
                     : "border border-transparent"
                 }
-              `}>
+              `}
+            >
               <div className="relative mx-auto lg:mx-0">
                 <img
                   src={user.profilePic || "/avatar.png"}
@@ -132,8 +134,8 @@ const Sidebar = () => {
               {showOnlineOnly
                 ? "No one is active right now"
                 : searchQuery
-                ? "No matching connections found"
-                : "You don't have any contacts yet"}
+                  ? "No matching connections found"
+                  : "You don't have any contacts yet"}
             </p>
           </div>
         )}

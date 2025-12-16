@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuthStore } from "../store/useAuthStore";
 import { Camera, Calendar, Mail, Shield, User } from "lucide-react";
+import tost from "react-hot-toast";
 
 const ProfilePage = () => {
   const { authUser, isUpdatingProfile, updateProfile } = useAuthStore();
@@ -10,14 +11,33 @@ const ProfilePage = () => {
     const file = e.target.files[0];
     if (!file) return;
 
+    if (file.size > 5 * 1024 * 1024) {
+      tost.error("Image must be less than 5MB");
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      tost.error("Please select an image file");
+      return;
+    }
+
     const reader = new FileReader();
+
+    reader.onerror = () => {
+      tost.error("Failed to read image file");
+    };
 
     reader.readAsDataURL(file);
 
     reader.onload = async () => {
-      const base64Image = reader.result;
-      setSelectedImg(base64Image);
-      await updateProfile({ profilePic: base64Image });
+      try {
+        const base64Image = reader.result;
+        setSelectedImg(base64Image);
+        await updateProfile({ profilePic: base64Image });
+      } catch {
+        tost.error("Failed to update profile picture");
+        setSelectedImg(null);
+      }
     };
   };
 

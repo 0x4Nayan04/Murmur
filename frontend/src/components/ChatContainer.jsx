@@ -88,7 +88,8 @@ const ChatContainer = () => {
                     date === Object.keys(groupedMessages).slice(-1)[0]
                       ? messageEndRef
                       : null
-                  }>
+                  }
+                >
                   {showAvatar && (
                     <div className="chat-image avatar">
                       <div className="size-8 md:size-9 rounded-full border border-base-300">
@@ -110,13 +111,15 @@ const ChatContainer = () => {
                       isOwnMessage
                         ? "bg-primary/90 text-primary-content"
                         : "bg-base-200"
-                    } flex flex-col px-3 py-2 shadow-sm`}>
+                    } flex flex-col px-3 py-2 shadow-sm`}
+                  >
                     {message.image && (
                       <a
                         href={message.image}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="mb-1.5">
+                        className="mb-1.5"
+                      >
                         <img
                           src={message.image}
                           alt="Attachment"
@@ -157,7 +160,8 @@ const ChatContainer = () => {
                 viewBox="0 0 24 24"
                 strokeWidth={1.5}
                 stroke="currentColor"
-                className="w-8 h-8 opacity-50">
+                className="w-8 h-8 opacity-50"
+              >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"

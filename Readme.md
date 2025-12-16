@@ -19,7 +19,6 @@ A sophisticated real-time messaging platform built with the MERN stack (MongoDB,
 ## 🚀 Technology Suite
 
 - **Frontend**:
-
   - React.js with hooks
   - Zustand for state management
   - TailwindCSS with DaisyUI components
