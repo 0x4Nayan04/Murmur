@@ -28,7 +28,7 @@ export const getMessages = async (req, res) => {
         { senderId: myId, receiverId: userToChatId },
         { senderId: userToChatId, receiverId: myId },
       ],
-    });
+    }).sort({ createdAt: 1 }); // Sort oldest to newest
 
     res.status(200).json(messages);
   } catch (error) {
@@ -43,6 +43,13 @@ export const sendMessage = async (req, res) => {
     const { id: receiverId } = req.params;
     const senderId = req.user._id;
 
+    // Validate: must have either text or image
+    if (!text?.trim() && !image) {
+      return res.status(400).json({
+        error: "Message must contain text or an image",
+      });
+    }
+
     let imageUrl;
     if (image) {
       // Upload base64 image to cloudinary
@@ -53,7 +60,7 @@ export const sendMessage = async (req, res) => {
     const newMessage = new Message({
       senderId,
       receiverId,
-      text,
+      text: text?.trim() || undefined,
       image: imageUrl,
     });
 

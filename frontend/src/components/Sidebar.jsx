@@ -7,7 +7,7 @@ import { Users, Search, Circle, MessageCircle, X } from "lucide-react";
 const Sidebar = () => {
   const { getUsers, users, selectedUser, setSelectedUser, isUsersLoading } =
     useChatStore();
-  const { onlineUsers } = useAuthStore();
+  const { onlineUsers, authUser } = useAuthStore();
   const [showOnlineOnly, setShowOnlineOnly] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -40,7 +40,10 @@ const Sidebar = () => {
 
           <div className="hidden lg:block">
             <span className="badge badge-primary">
-              {onlineUsers.length - 1} active now
+              {onlineUsers.includes(authUser?._id)
+                ? onlineUsers.length - 1
+                : onlineUsers.length}{" "}
+              active now
             </span>
           </div>
         </div>
