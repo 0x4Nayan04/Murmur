@@ -20,7 +20,13 @@ import {
 
 const router = express.Router();
 
+// Static routes MUST come before dynamic routes to avoid conflicts
 router.get("/users", protectRoute, getUsersForSidebar);
+
+// Unread counts - MUST be before /:id to avoid being caught by it
+router.get("/unread/all", protectRoute, getAllUnreadCounts);
+
+// Dynamic routes with :id parameter
 router.get("/:id", protectRoute, validate(getMessagesSchema), getMessages);
 
 router.post(
@@ -37,7 +43,6 @@ router.put(
   validate(markMessagesAsReadSchema),
   markMessagesAsRead,
 );
-router.get("/unread/all", protectRoute, getAllUnreadCounts);
 
 // Edit and delete routes
 router.put(

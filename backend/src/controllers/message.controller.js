@@ -81,9 +81,19 @@ export const sendMessage = async (req, res) => {
 
     let imageUrl;
     if (image) {
-      // Upload base64 image to cloudinary
-      const uploadResponse = await cloudinary.uploader.upload(image);
-      imageUrl = uploadResponse.secure_url;
+      // Check if it's already a URL (from direct Cloudinary upload) or base64
+      if (image.startsWith("http://") || image.startsWith("https://")) {
+        // Already a URL, use directly
+        imageUrl = image;
+      } else if (image.startsWith("data:")) {
+        // Base64 image - upload to Cloudinary
+        const uploadResponse = await cloudinary.uploader.upload(image);
+        imageUrl = uploadResponse.secure_url;
+      } else {
+        return res.status(400).json({
+          error: "Invalid image format. Expected URL or base64 data.",
+        });
+      }
     }
 
     const newMessage = new Message({

@@ -17,7 +17,7 @@ export const useChatStore = create((set, get) => ({
       const res = await axiosInstance.get("/messages/users");
       set({ users: res.data });
     } catch (error) {
-      toast.error(error.response.data.message);
+      toast.error(error.response?.data?.message || "Failed to load users");
     } finally {
       set({ isUsersLoading: false });
     }
@@ -27,9 +27,13 @@ export const useChatStore = create((set, get) => ({
     set({ isMessagesLoading: true });
     try {
       const res = await axiosInstance.get(`/messages/${userId}`);
-      set({ messages: res.data });
+      // Handle both old format (array) and new format (object with data.messages)
+      const messagesData =
+        res.data?.data?.messages || res.data?.messages || res.data;
+      set({ messages: Array.isArray(messagesData) ? messagesData : [] });
     } catch (error) {
-      toast.error(error.response.data.message);
+      toast.error(error.response?.data?.message || "Failed to load messages");
+      set({ messages: [] }); // Reset to empty array on error
     } finally {
       set({ isMessagesLoading: false });
     }
@@ -38,6 +42,9 @@ export const useChatStore = create((set, get) => ({
   sendMessage: async (messageData) => {
     const { selectedUser, messages } = get();
     const authUser = useAuthStore.getState().authUser;
+
+    // Ensure messages is an array
+    const currentMessages = Array.isArray(messages) ? messages : [];
 
     // Create optimistic message
     const optimisticMessage = {
@@ -51,7 +58,7 @@ export const useChatStore = create((set, get) => ({
     };
 
     // Add optimistically to UI
-    set({ messages: [...messages, optimisticMessage] });
+    set({ messages: [...currentMessages, optimisticMessage] });
 
     try {
       const res = await axiosInstance.post(
@@ -60,17 +67,21 @@ export const useChatStore = create((set, get) => ({
       );
 
       // Replace optimistic message with real message from server
+      const updatedMessages = get().messages;
       set({
-        messages: get().messages.map((msg) =>
-          msg._id === optimisticMessage._id ? res.data : msg,
-        ),
+        messages: Array.isArray(updatedMessages)
+          ? updatedMessages.map((msg) =>
+              msg._id === optimisticMessage._id ? res.data : msg,
+            )
+          : [res.data],
       });
     } catch (error) {
       // Remove optimistic message on error
+      const updatedMessages = get().messages;
       set({
-        messages: get().messages.filter(
-          (msg) => msg._id !== optimisticMessage._id,
-        ),
+        messages: Array.isArray(updatedMessages)
+          ? updatedMessages.filter((msg) => msg._id !== optimisticMessage._id)
+          : [],
       });
       toast.error(error.response?.data?.message || "Failed to send message");
     }
@@ -103,14 +114,19 @@ export const useChatStore = create((set, get) => ({
         newMessage.senderId === selectedUser._id;
       if (!isMessageSentFromSelectedUser) return;
 
+      // Ensure messages is an array
+      const currentMessages = Array.isArray(get().messages)
+        ? get().messages
+        : [];
+
       // Check if message already exists (to prevent duplicates from optimistic updates)
-      const messageExists = get().messages.some(
+      const messageExists = currentMessages.some(
         (msg) => msg._id === newMessage._id,
       );
 
       if (!messageExists) {
         set({
-          messages: [...get().messages, newMessage],
+          messages: [...currentMessages, newMessage],
         });
       }
     });
@@ -135,5 +151,13 @@ export const useChatStore = create((set, get) => ({
     }
   },
 
-  setSelectedUser: (selectedUser) => set({ selectedUser }),
+  // Reset messages and clear typing state when switching users
+  setSelectedUser: (selectedUser) => {
+    // Clear messages immediately when switching users to avoid showing old messages
+    set({
+      selectedUser,
+      messages: [], // Reset messages when switching users
+      typingUsers: {}, // Clear typing indicators
+    });
+  },
 }));

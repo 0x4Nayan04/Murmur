@@ -43,15 +43,17 @@ const ChatContainer = () => {
     }
   }, [messages, isTyping]);
 
-  // Group messages by date
-  const groupedMessages = messages.reduce((groups, message) => {
-    const date = new Date(message.createdAt).toLocaleDateString();
-    if (!groups[date]) {
-      groups[date] = [];
-    }
-    groups[date].push(message);
-    return groups;
-  }, {});
+  // Group messages by date - ensure messages is an array
+  const groupedMessages = Array.isArray(messages)
+    ? messages.reduce((groups, message) => {
+        const date = new Date(message.createdAt).toLocaleDateString();
+        if (!groups[date]) {
+          groups[date] = [];
+        }
+        groups[date].push(message);
+        return groups;
+      }, {})
+    : {};
 
   if (isMessagesLoading) {
     return (
@@ -153,7 +155,7 @@ const ChatContainer = () => {
           </div>
         ))}
 
-        {messages.length === 0 && (
+        {Array.isArray(messages) && messages.length === 0 && (
           <div className="h-full flex flex-col items-center justify-center text-base-content/50 py-20">
             <div className="w-16 h-16 rounded-full bg-base-200 mb-4 flex items-center justify-center">
               <svg
