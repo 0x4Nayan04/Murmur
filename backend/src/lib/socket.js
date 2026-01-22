@@ -2,15 +2,29 @@ import { Server } from "socket.io";
 import http from "http";
 import express from "express";
 import cookieParser from "cookie-parser";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const app = express();
 app.use(cookieParser());
 
 const server = http.createServer(app);
 
+// Configure CORS for socket.io to match the main app CORS settings
+const allowedOrigins =
+  process.env.NODE_ENV === "production"
+    ? [process.env.FRONTEND_URL]
+    : [
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:5174",
+      ];
+
 const io = new Server(server, {
   cors: {
-    origin: ["http://localhost:5173", "http://127.0.0.1:5173"],
+    origin: allowedOrigins,
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -28,17 +42,52 @@ io.on("connection", (socket) => {
   console.log("A user connected", socket.id);
 
   const userId = socket.handshake.query.userId;
-  if (userId) {
-    userSocketMap[userId] = socket.id;
+
+  // Validate userId exists and is not undefined
+  if (!userId || userId === "undefined") {
+    console.warn("Socket connection rejected: missing or invalid userId");
+    socket.disconnect(true);
+    return;
   }
+
+  userSocketMap[userId] = socket.id;
 
   // io.emit() is used to send events to all the connected clients
   io.emit("getOnlineUsers", Object.keys(userSocketMap));
 
+  // Handle typing indicator events
+  socket.on("typing", (data) => {
+    const { receiverId } = data;
+    const receiverSocketId = userSocketMap[receiverId];
+
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("userTyping", {
+        senderId: userId,
+        isTyping: true,
+      });
+    }
+  });
+
+  socket.on("stopTyping", (data) => {
+    const { receiverId } = data;
+    const receiverSocketId = userSocketMap[receiverId];
+
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("userTyping", {
+        senderId: userId,
+        isTyping: false,
+      });
+    }
+  });
+
   socket.on("disconnect", () => {
     console.log("A user disconnected", socket.id);
-    delete userSocketMap[userId];
-    io.emit("getOnlineUsers", Object.keys(userSocketMap));
+    // Get userId from handshake to prevent undefined error
+    const userId = socket.handshake.query.userId;
+    if (userId && userSocketMap[userId]) {
+      delete userSocketMap[userId];
+      io.emit("getOnlineUsers", Object.keys(userSocketMap));
+    }
   });
 });
 

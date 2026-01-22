@@ -23,4 +23,21 @@ dist-ssr
 *.sln
 *.sw?
 
+# Environment variables
 .env
+backend/.env
+frontend/.env
+.env.local
+.env.development
+.env.production
+
+# Build outputs
+frontend/dist/
+frontend/build/
+backend/dist/
+
+# Testing
+coverage/
+
+# Misc
+.cache/

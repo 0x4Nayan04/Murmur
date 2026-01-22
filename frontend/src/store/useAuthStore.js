@@ -39,7 +39,7 @@ export const useAuthStore = create((set, get) => ({
       toast.success("Account created successfully");
       get().connectSocket();
     } catch (error) {
-      toast.error(error.response.data.message);
+      toast.error(error.response?.data?.message || "Failed to sign up");
     } finally {
       set({ isSigningUp: false });
     }
@@ -53,7 +53,7 @@ export const useAuthStore = create((set, get) => ({
       toast.success("Logged in successfully");
       get().connectSocket();
     } catch (error) {
-      toast.error(error.response.data.message);
+      toast.error(error.response?.data?.message || "Failed to log in");
     } finally {
       set({ isLoggingIn: false });
     }
@@ -66,7 +66,7 @@ export const useAuthStore = create((set, get) => ({
       toast.success("Logged out successfully");
       get().disconnectSocket();
     } catch (error) {
-      toast.error(error.response.data.message);
+      toast.error(error.response?.data?.message || "Failed to log out");
     }
   },
 
@@ -78,27 +78,32 @@ export const useAuthStore = create((set, get) => ({
       toast.success("Profile updated successfully");
     } catch (error) {
       console.log("error in update profile:", error);
-      toast.error(error.response.data.message);
+      toast.error(error.response?.data?.message || "Failed to update profile");
     } finally {
       set({ isUpdatingProfile: false });
     }
   },
 
   connectSocket: () => {
-    const { authUser } = get();
-    if (!authUser || get().socket?.connected) return;
+    const { authUser, socket } = get();
+    if (!authUser || socket?.connected) return; // Prevent duplicates
 
-    const socket = io(BASE_URL, {
+    // Disconnect existing socket first to prevent race conditions
+    if (socket) {
+      socket.disconnect();
+    }
+
+    const newSocket = io(BASE_URL, {
       query: {
         userId: authUser._id,
       },
       withCredentials: true, // Required for cookies to be sent
     });
-    socket.connect();
+    newSocket.connect();
 
-    set({ socket: socket });
+    set({ socket: newSocket });
 
-    socket.on("getOnlineUsers", (userIds) => {
+    newSocket.on("getOnlineUsers", (userIds) => {
       console.log("Online users received:", userIds);
       set({ onlineUsers: userIds });
     });

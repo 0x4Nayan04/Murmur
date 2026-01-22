@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useChatStore } from "../store/useChatStore";
 import { useAuthStore } from "../store/useAuthStore";
 import SidebarSkeleton from "./skeletons/SidebarSkeleton";
@@ -7,20 +7,32 @@ import { Users, Search, Circle, MessageCircle, X } from "lucide-react";
 const Sidebar = () => {
   const { getUsers, users, selectedUser, setSelectedUser, isUsersLoading } =
     useChatStore();
-  const { onlineUsers } = useAuthStore();
+  const { onlineUsers, authUser } = useAuthStore();
   const [showOnlineOnly, setShowOnlineOnly] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
   useEffect(() => {
     getUsers();
   }, [getUsers]);
 
-  // Filter users based on online status and search query
-  const filteredUsers = users
-    .filter((user) => !showOnlineOnly || onlineUsers.includes(user._id))
-    .filter((user) =>
-      user.fullName.toLowerCase().includes(searchQuery.toLowerCase()),
-    );
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 300); // 300ms delay
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Filter users based on online status and debounced search query
+  const filteredUsers = useMemo(() => {
+    return users
+      .filter((user) => !showOnlineOnly || onlineUsers.includes(user._id))
+      .filter((user) =>
+        user.fullName.toLowerCase().includes(debouncedSearch.toLowerCase()),
+      );
+  }, [users, showOnlineOnly, onlineUsers, debouncedSearch]);
 
   if (isUsersLoading) return <SidebarSkeleton />;
 
@@ -40,7 +52,10 @@ const Sidebar = () => {
 
           <div className="hidden lg:block">
             <span className="badge badge-primary">
-              {onlineUsers.length - 1} active now
+              {onlineUsers.includes(authUser?._id)
+                ? onlineUsers.length - 1
+                : onlineUsers.length}{" "}
+              active now
             </span>
           </div>
         </div>
