@@ -2,10 +2,13 @@ import { Image, Send, X } from "lucide-react";
 import { useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { useChatStore } from "../store/useChatStore";
+import { uploadToCloudinary } from "../lib/cloudinary";
 
 const MessageInput = () => {
   const [text, setText] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
+  const [imageFile, setImageFile] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef(null);
   const { sendMessage } = useChatStore();
 
@@ -18,6 +21,17 @@ const MessageInput = () => {
       return;
     }
 
+    // Check file size (5MB max)
+    const MAX_SIZE = 5 * 1024 * 1024;
+    if (file.size > MAX_SIZE) {
+      toast.error("Image size must be less than 5MB");
+      return;
+    }
+
+    // Store the file for later upload
+    setImageFile(file);
+
+    // Create preview
     const reader = new FileReader();
     reader.onloadend = () => {
       setImagePreview(reader.result);
@@ -27,6 +41,7 @@ const MessageInput = () => {
 
   const removeImage = () => {
     setImagePreview(null);
+    setImageFile(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -35,18 +50,36 @@ const MessageInput = () => {
     if (!text.trim() && !imagePreview) return;
 
     try {
+      setIsUploading(true);
+      let imageUrl = null;
+
+      // Upload image to Cloudinary if present
+      if (imageFile) {
+        try {
+          imageUrl = await uploadToCloudinary(imageFile);
+        } catch (uploadError) {
+          toast.error(uploadError.message || "Failed to upload image");
+          setIsUploading(false);
+          return;
+        }
+      }
+
+      // Send message with text and/or image URL
       await sendMessage({
-        text: text.trim(),
-        image: imagePreview,
+        text: text.trim() || undefined,
+        image: imageUrl || undefined,
       });
 
       // Clear form
       setText("");
       setImagePreview(null);
+      setImageFile(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
     } catch (error) {
       console.error("Failed to send message:", error);
       toast.error("Failed to send message");
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -65,6 +98,7 @@ const MessageInput = () => {
               className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-base-200 hover:bg-base-300
               flex items-center justify-center shadow-md transition-colors duration-200"
               type="button"
+              disabled={isUploading}
             >
               <X className="size-3.5" />
             </button>
@@ -77,9 +111,14 @@ const MessageInput = () => {
           <input
             type="text"
             className="w-full input input-bordered rounded-full input-sm sm:input-md pl-5 pr-24"
-            placeholder="Write your message..."
+            placeholder={
+              imagePreview
+                ? "Add a caption (optional)..."
+                : "Write your message..."
+            }
             value={text}
             onChange={(e) => setText(e.target.value)}
+            disabled={isUploading}
           />
 
           <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
@@ -92,6 +131,7 @@ const MessageInput = () => {
                         : "text-base-content/70 hover:text-base-content"
                     }`}
               onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading}
             >
               <Image size={18} />
             </button>
@@ -104,6 +144,7 @@ const MessageInput = () => {
           className="hidden"
           ref={fileInputRef}
           onChange={handleImageChange}
+          disabled={isUploading}
         />
 
         <button
@@ -113,9 +154,13 @@ const MessageInput = () => {
               ? "btn-neutral opacity-50"
               : "btn-primary text-primary-content"
           }`}
-          disabled={!text.trim() && !imagePreview}
+          disabled={(!text.trim() && !imagePreview) || isUploading}
         >
-          <Send size={18} />
+          {isUploading ? (
+            <span className="loading loading-spinner loading-xs"></span>
+          ) : (
+            <Send size={18} />
+          )}
         </button>
       </form>
     </div>

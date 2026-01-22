@@ -23,14 +23,43 @@ export const getMessages = async (req, res) => {
     const { id: userToChatId } = req.params;
     const myId = req.user._id;
 
-    const messages = await Message.find({
+    // Pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const skip = (page - 1) * limit;
+
+    // Query to find messages between two users
+    const query = {
       $or: [
         { senderId: myId, receiverId: userToChatId },
         { senderId: userToChatId, receiverId: myId },
       ],
-    }).sort({ createdAt: 1 }); // Sort oldest to newest
+    };
 
-    res.status(200).json(messages);
+    // Fetch messages with pagination (newest first, then reverse)
+    const messages = await Message.find(query)
+      .sort({ createdAt: -1 }) // Newest first for pagination
+      .skip(skip)
+      .limit(limit);
+
+    // Reverse to show oldest first in UI
+    const sortedMessages = messages.reverse();
+
+    // Get total count for pagination metadata
+    const totalCount = await Message.countDocuments(query);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        messages: sortedMessages,
+        pagination: {
+          currentPage: page,
+          totalPages: Math.ceil(totalCount / limit),
+          totalMessages: totalCount,
+          hasMore: skip + messages.length < totalCount,
+        },
+      },
+    });
   } catch (error) {
     console.log("Error in getMessages controller: ", error.message);
     res.status(500).json({ error: "Internal server error" });
@@ -74,6 +103,184 @@ export const sendMessage = async (req, res) => {
     res.status(201).json(newMessage);
   } catch (error) {
     console.log("Error in sendMessage controller: ", error.message);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// Mark messages as read
+export const markMessagesAsRead = async (req, res) => {
+  try {
+    const { id: senderId } = req.params; // Messages from this user
+    const receiverId = req.user._id; // Current user
+
+    const result = await Message.updateMany(
+      {
+        senderId: senderId,
+        receiverId: receiverId,
+        isRead: false,
+        isDeleted: false,
+      },
+      {
+        $set: {
+          isRead: true,
+          readAt: new Date(),
+        },
+      },
+    );
+
+    // Emit socket event to sender
+    const senderSocketId = getReceiverSocketId(senderId);
+    if (senderSocketId) {
+      io.to(senderSocketId).emit("messagesRead", {
+        readBy: receiverId,
+        count: result.modifiedCount,
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: { markedCount: result.modifiedCount },
+    });
+  } catch (error) {
+    console.error("Error in markMessagesAsRead: ", error.message);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// Get unread count for all conversations
+export const getAllUnreadCounts = async (req, res) => {
+  try {
+    const myId = req.user._id;
+
+    // Aggregate unread counts by sender
+    const unreadCounts = await Message.aggregate([
+      {
+        $match: {
+          receiverId: myId,
+          isRead: false,
+          isDeleted: false,
+        },
+      },
+      {
+        $group: {
+          _id: "$senderId",
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    // Convert to object: { userId: count }
+    const countsMap = {};
+    unreadCounts.forEach((item) => {
+      countsMap[item._id.toString()] = item.count;
+    });
+
+    res.status(200).json({ success: true, data: countsMap });
+  } catch (error) {
+    console.error("Error in getAllUnreadCounts: ", error.message);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// Edit message
+export const editMessage = async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const { text } = req.body;
+    const userId = req.user._id;
+
+    if (!text?.trim()) {
+      return res.status(400).json({
+        error: "Message text cannot be empty",
+      });
+    }
+
+    const message = await Message.findById(messageId);
+
+    if (!message) {
+      return res.status(404).json({
+        error: "Message not found",
+      });
+    }
+
+    // Only sender can edit
+    if (message.senderId.toString() !== userId.toString()) {
+      return res.status(403).json({
+        error: "Not authorized to edit this message",
+      });
+    }
+
+    // Cannot edit deleted messages
+    if (message.isDeleted) {
+      return res.status(400).json({
+        error: "Cannot edit deleted message",
+      });
+    }
+
+    message.text = text.trim();
+    message.isEdited = true;
+    message.editedAt = new Date();
+
+    await message.save();
+
+    // Emit socket event to receiver
+    const receiverSocketId = getReceiverSocketId(message.receiverId.toString());
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("messageEdited", message);
+    }
+
+    res.status(200).json({ success: true, data: message });
+  } catch (error) {
+    console.error("Error in editMessage: ", error.message);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// Delete message (soft delete)
+export const deleteMessage = async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const userId = req.user._id;
+
+    const message = await Message.findById(messageId);
+
+    if (!message) {
+      return res.status(404).json({
+        error: "Message not found",
+      });
+    }
+
+    // Only sender can delete
+    if (message.senderId.toString() !== userId.toString()) {
+      return res.status(403).json({
+        error: "Not authorized to delete this message",
+      });
+    }
+
+    // Already deleted
+    if (message.isDeleted) {
+      return res.status(400).json({
+        error: "Message already deleted",
+      });
+    }
+
+    // Soft delete
+    message.isDeleted = true;
+    message.deletedAt = new Date();
+    message.text = null; // Clear content
+    message.image = null; // Clear image
+
+    await message.save();
+
+    // Emit socket event to receiver
+    const receiverSocketId = getReceiverSocketId(message.receiverId.toString());
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("messageDeleted", { messageId });
+    }
+
+    res.status(200).json({ success: true, data: message });
+  } catch (error) {
+    console.error("Error in deleteMessage: ", error.message);
     res.status(500).json({ error: "Internal server error" });
   }
 };
