@@ -9,6 +9,7 @@ export const useChatStore = create((set, get) => ({
   selectedUser: null,
   isUsersLoading: false,
   isMessagesLoading: false,
+  typingUsers: {}, // Track typing status: { userId: true/false }
 
   getUsers: async () => {
     set({ isUsersLoading: true });
@@ -33,16 +34,60 @@ export const useChatStore = create((set, get) => ({
       set({ isMessagesLoading: false });
     }
   },
+
   sendMessage: async (messageData) => {
     const { selectedUser, messages } = get();
+    const authUser = useAuthStore.getState().authUser;
+
+    // Create optimistic message
+    const optimisticMessage = {
+      _id: `temp-${Date.now()}-${Math.random()}`,
+      senderId: authUser._id,
+      receiverId: selectedUser._id,
+      text: messageData.text || "",
+      image: messageData.image || "",
+      createdAt: new Date().toISOString(),
+      isPending: true, // Flag for UI to show pending state
+    };
+
+    // Add optimistically to UI
+    set({ messages: [...messages, optimisticMessage] });
+
     try {
       const res = await axiosInstance.post(
         `/messages/send/${selectedUser._id}`,
         messageData,
       );
-      set({ messages: [...messages, res.data] });
+
+      // Replace optimistic message with real message from server
+      set({
+        messages: get().messages.map((msg) =>
+          msg._id === optimisticMessage._id ? res.data : msg,
+        ),
+      });
     } catch (error) {
-      toast.error(error.response.data.message);
+      // Remove optimistic message on error
+      set({
+        messages: get().messages.filter(
+          (msg) => msg._id !== optimisticMessage._id,
+        ),
+      });
+      toast.error(error.response?.data?.message || "Failed to send message");
+    }
+  },
+
+  // Typing indicator functions
+  emitTyping: (receiverId) => {
+    const socket = useAuthStore.getState().socket;
+    if (socket) {
+      socket.emit("typing", { receiverId });
+    }
+  },
+
+  emitStopTyping: (receiverId) => {
+    const socket = useAuthStore.getState().socket;
+    if (socket) {
+      socket.emit("stopTyping", { receiverId });
     }
   },
 
@@ -58,9 +103,26 @@ export const useChatStore = create((set, get) => ({
         newMessage.senderId === selectedUser._id;
       if (!isMessageSentFromSelectedUser) return;
 
-      set({
-        messages: [...get().messages, newMessage],
-      });
+      // Check if message already exists (to prevent duplicates from optimistic updates)
+      const messageExists = get().messages.some(
+        (msg) => msg._id === newMessage._id,
+      );
+
+      if (!messageExists) {
+        set({
+          messages: [...get().messages, newMessage],
+        });
+      }
+    });
+
+    // Listen for typing indicators
+    socket.on("userTyping", ({ senderId, isTyping }) => {
+      set((state) => ({
+        typingUsers: {
+          ...state.typingUsers,
+          [senderId]: isTyping,
+        },
+      }));
     });
   },
 
@@ -69,6 +131,7 @@ export const useChatStore = create((set, get) => ({
     if (socket) {
       // Add null check
       socket.off("newMessage");
+      socket.off("userTyping");
     }
   },
 
