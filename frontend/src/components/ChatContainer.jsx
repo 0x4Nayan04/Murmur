@@ -1,6 +1,6 @@
 import { useChatStore } from "../store/useChatStore";
 import { useEffect, useRef } from "react";
-import { Check, CheckCheck } from "lucide-react";
+import { Check, CheckCheck, Loader } from "lucide-react";
 
 import ChatHeader from "./ChatHeader";
 import MessageInput from "./MessageInput";
@@ -16,16 +16,22 @@ const ChatContainer = () => {
     selectedUser,
     subscribeToMessages,
     unsubscribeFromMessages,
+    typingUsers,
   } = useChatStore();
   const { authUser } = useAuthStore();
   const messageEndRef = useRef(null);
 
+  // Check if selected user is typing
+  const isTyping = selectedUser && typingUsers[selectedUser._id];
+
   useEffect(() => {
-    getMessages(selectedUser._id);
-    subscribeToMessages();
+    if (selectedUser?._id) {
+      getMessages(selectedUser._id);
+      subscribeToMessages();
+    }
     return () => unsubscribeFromMessages();
   }, [
-    selectedUser._id,
+    selectedUser?._id,
     getMessages,
     subscribeToMessages,
     unsubscribeFromMessages,
@@ -35,17 +41,19 @@ const ChatContainer = () => {
     if (messageEndRef.current && messages) {
       messageEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages]);
+  }, [messages, isTyping]);
 
-  // Group messages by date
-  const groupedMessages = messages.reduce((groups, message) => {
-    const date = new Date(message.createdAt).toLocaleDateString();
-    if (!groups[date]) {
-      groups[date] = [];
-    }
-    groups[date].push(message);
-    return groups;
-  }, {});
+  // Group messages by date - ensure messages is an array
+  const groupedMessages = Array.isArray(messages)
+    ? messages.reduce((groups, message) => {
+        const date = new Date(message.createdAt).toLocaleDateString();
+        if (!groups[date]) {
+          groups[date] = [];
+        }
+        groups[date].push(message);
+        return groups;
+      }, {})
+    : {};
 
   if (isMessagesLoading) {
     return (
@@ -83,12 +91,6 @@ const ChatContainer = () => {
                 <div
                   key={message._id}
                   className={`chat ${isOwnMessage ? "chat-end" : "chat-start"}`}
-                  ref={
-                    index === dateMessages.length - 1 &&
-                    date === Object.keys(groupedMessages).slice(-1)[0]
-                      ? messageEndRef
-                      : null
-                  }
                 >
                   {showAvatar && (
                     <div className="chat-image avatar">
@@ -111,7 +113,7 @@ const ChatContainer = () => {
                       isOwnMessage
                         ? "bg-primary/90 text-primary-content"
                         : "bg-base-200"
-                    } flex flex-col px-3 py-2 shadow-sm`}
+                    } ${message.isPending ? "opacity-60" : ""} flex flex-col px-3 py-2 shadow-sm`}
                   >
                     {message.image && (
                       <a
@@ -138,7 +140,9 @@ const ChatContainer = () => {
                         {formatMessageTime(message.createdAt)}
                       </time>
                       {isOwnMessage &&
-                        (message.read ? (
+                        (message.isPending ? (
+                          <Loader size={12} className="animate-spin" />
+                        ) : message.read ? (
                           <CheckCheck size={12} />
                         ) : (
                           <Check size={12} />
@@ -151,7 +155,7 @@ const ChatContainer = () => {
           </div>
         ))}
 
-        {messages.length === 0 && (
+        {Array.isArray(messages) && messages.length === 0 && (
           <div className="h-full flex flex-col items-center justify-center text-base-content/50 py-20">
             <div className="w-16 h-16 rounded-full bg-base-200 mb-4 flex items-center justify-center">
               <svg
@@ -175,6 +179,36 @@ const ChatContainer = () => {
             </p>
           </div>
         )}
+
+        {/* Typing indicator */}
+        {isTyping && (
+          <div className="chat chat-start">
+            <div className="chat-image avatar">
+              <div className="size-8 md:size-9 rounded-full border border-base-300">
+                <img
+                  src={selectedUser.profilePic || "/avatar.png"}
+                  alt="profile pic"
+                  className="object-cover"
+                />
+              </div>
+            </div>
+            <div className="chat-bubble bg-base-200 flex items-center gap-1.5">
+              <div className="flex gap-1">
+                <span className="w-2 h-2 bg-base-content/40 rounded-full animate-bounce"></span>
+                <span
+                  className="w-2 h-2 bg-base-content/40 rounded-full animate-bounce"
+                  style={{ animationDelay: "0.2s" }}
+                ></span>
+                <span
+                  className="w-2 h-2 bg-base-content/40 rounded-full animate-bounce"
+                  style={{ animationDelay: "0.4s" }}
+                ></span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div ref={messageEndRef} />
       </div>
 
       <MessageInput />
