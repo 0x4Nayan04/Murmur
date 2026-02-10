@@ -3,6 +3,9 @@
 > A sophisticated real-time messaging platform built with the MERN stack and
 > Socket.IO for seamless communication experiences.
 
+**Live:** [murmur.nayan04.me](https://murmur.nayan04.me) | **GitHub:**
+[0x4Nayan04/Murmur](https://github.com/0x4Nayan04/Murmur/tree/main)
+
 [![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](https://opensource.org/licenses/ISC)
 [![Node.js](https://img.shields.io/badge/Node.js-16%2B-green.svg)](https://nodejs.org/)
 [![React](https://img.shields.io/badge/React-18.3-blue.svg)](https://reactjs.org/)
@@ -34,7 +37,6 @@
 - **Input validation** with comprehensive Zod schemas
 - **CORS protection** with environment-based configuration
 - **Production-ready** error handling and logging
-- **Rate limiting** and request validation
 - **Secure cookie** configuration for cross-origin deployment
 
 ## Technology Stack
@@ -167,67 +169,77 @@ Create `.env` file in the `frontend/` directory:
 VITE_API_URL=http://localhost:5001
 ```
 
-> 💡 **Tip**: Use the provided `.env.example` files as templates for your
-> environment setup.
-
 ## Project Architecture
 
 ```
 murmur/
 ├── package.json                 # Root scripts & dependencies
-├── README.md                    # Project documentation
+├── Readme.md                    # Project documentation
 ├── .gitignore                   # Git ignore rules
 │
 ├── backend/                     # Node.js/Express API server
 │   ├── src/
 │   │   ├── controllers/         # Request handlers & business logic
-│   │   │   ├── auth.controller.js  # Authentication endpoints
-│   │   │   ├── message.controller.js # Message CRUD operations
-│   │   │   └── upload.controller.js  # Cloudinary upload signatures
+│   │   │   ├── auth.controller.js
+│   │   │   ├── message.controller.js
+│   │   │   └── upload.controller.js
 │   │   ├── lib/                 # Utilities & configurations
-│   │   │   ├── socket.js           # Socket.IO event handlers
-│   │   │   ├── utils.js            # Helper functions & JWT utils
-│   │   │   └── validation.js       # Zod validation schemas
-│   │   ├── middleware/          # Express middleware
-│   │   │   └── validation.middleware.js # Request validation
-│   │   ├── models/              # MongoDB schemas
-│   │   │   ├── user.model.js       # User data structure
-│   │   │   └── message.model.js    # Message data structure
-│   │   ├── routes/              # API route definitions
-│   │   │   ├── auth.route.js       # Authentication routes
-│   │   │   ├── message.route.js    # Message routes
-│   │   │   └── upload.route.js     # Upload routes
-│   │   └── index.js             # Server entry point
-│   ├── .env                     # Environment variables
-│   ├── package.json             # Backend dependencies
-│   └── eslint.config.js         # ESLint configuration
+│   │   │   ├── cloudinary.js
+│   │   │   ├── db.js
+│   │   │   ├── socket.js
+│   │   │   ├── utils.js
+│   │   │   └── validation.js
+│   │   ├── middleware/
+│   │   │   ├── auth.middleware.js
+│   │   │   └── validation.middleware.js
+│   │   ├── models/
+│   │   │   ├── user.model.js
+│   │   │   └── message.model.js
+│   │   ├── routes/
+│   │   │   ├── auth.route.js
+│   │   │   ├── message.route.js
+│   │   │   └── upload.route.js
+│   │   └── index.js
+│   ├── package.json
+│   └── eslint.config.js
 │
 ├── frontend/                     # React.js client application
 │   ├── src/
-│   │   ├── components/          # Reusable React components
-│   │   │   ├── ChatContainer.jsx   # Main chat interface
-│   │   │   ├── MessageInput.jsx    # Message composition
-│   │   │   ├── Sidebar.jsx         # User list & search
-│   │   │   └── Navbar.jsx          # Navigation bar
-│   │   ├── pages/               # Page-level components
-│   │   │   ├── HomePage.jsx        # Main chat page
-│   │   │   ├── LoginPage.jsx       # User authentication
-│   │   │   ├── SignUpPage.jsx      # User registration
-│   │   │   └── ProfilePage.jsx     # User profile management
-│   │   ├── store/               # Zustand state management
-│   │   │   ├── useAuthStore.js     # Authentication state
-│   │   │   └── useChatStore.js     # Chat & messaging state
-│   │   ├── lib/                 # Utilities & configurations
-│   │   │   ├── axios.js            # HTTP client configuration
-│   │   │   └── cloudinary.js       # Image upload utilities
-│   │   ├── App.css              # Global styles
-│   │   ├── App.jsx              # Root application component
-│   │   └── main.jsx             # Application entry point
-│   ├── .env                     # Environment variables
-│   ├── package.json             # Frontend dependencies
-│   ├── vite.config.js           # Vite build configuration
-│   ├── tailwind.config.js       # TailwindCSS configuration
-│   └── eslint.config.js         # ESLint configuration
+│   │   ├── components/
+│   │   │   ├── AuthImagePattern.jsx
+│   │   │   ├── ChatContainer.jsx
+│   │   │   ├── ChatHeader.jsx
+│   │   │   ├── MessageInput.jsx
+│   │   │   ├── Navbar.jsx
+│   │   │   ├── NoChatSelected.jsx
+│   │   │   ├── Sidebar.jsx
+│   │   │   ├── ThemeToggle.jsx
+│   │   │   └── skeletons/
+│   │   │       ├── MessageSkeleton.jsx
+│   │   │       └── SidebarSkeleton.jsx
+│   │   ├── constants/
+│   │   │   └── index.js
+│   │   ├── pages/
+│   │   │   ├── HomePage.jsx
+│   │   │   ├── LoginPage.jsx
+│   │   │   ├── ProfilePage.jsx
+│   │   │   └── SignUpPage.jsx
+│   │   ├── store/
+│   │   │   ├── useAuthStore.js
+│   │   │   ├── useChatStore.js
+│   │   │   └── useThemeStore.js
+│   │   ├── lib/
+│   │   │   ├── axios.js
+│   │   │   ├── cloudinary.js
+│   │   │   └── utils.js
+│   │   ├── index.css
+│   │   ├── App.jsx
+│   │   └── main.jsx
+│   ├── package.json
+│   ├── postcss.config.js
+│   ├── tailwind.config.js
+│   ├── vite.config.js
+│   └── eslint.config.js
 │
 └── node_modules/               # Shared dependencies
 ```
@@ -242,7 +254,7 @@ murmur/
 | `POST` | `/api/auth/login`          | User authentication          | `{ email, password }`           |
 | `POST` | `/api/auth/logout`         | User logout                  | None                            |
 | `GET`  | `/api/auth/check`          | Verify authentication status | None                            |
-| `PUT`  | `/api/auth/update-profile` | Update user profile          | `{ fullName?, profilePic? }`    |
+| `PUT`  | `/api/auth/update-profile` | Update user profile          | `{ profilePic }`                |
 
 ### Message Management
 
@@ -268,7 +280,6 @@ murmur/
 ### Client → Server Events
 
 ```javascript
-// User typing indicators
 socket.emit('typing', { receiverId: 'user_id' });
 socket.emit('stopTyping', { receiverId: 'user_id' });
 ```
@@ -276,23 +287,16 @@ socket.emit('stopTyping', { receiverId: 'user_id' });
 ### Server → Client Events
 
 ```javascript
-// Real-time message delivery
 socket.on('newMessage', (message) => {
   /* Handle new message */
 });
-
-// Typing status updates
 socket.on('userTyping', ({ senderId, isTyping }) => {
   /* Update UI */
 });
-
-// Online presence tracking
 socket.on('getOnlineUsers', (userIds) => {
   /* Update online status */
 });
-
-// Message status updates
-socket.on('messagesRead', ({ conversationId }) => {
+socket.on('messagesRead', ({ readBy, count }) => {
   /* Mark as read */
 });
 socket.on('messageEdited', (message) => {
@@ -334,10 +338,9 @@ socket.on('messageDeleted', ({ messageId }) => {
 
 ### Security & Validation
 
-- **JWT authentication** with secure httpOnly cookies and automatic refresh
+- **JWT authentication** with secure httpOnly cookies
 - **Comprehensive input validation** using Zod schemas on both client and server
 - **CORS protection** with environment-specific allowed origins
-- **Rate limiting** and request timeout handling
 - **XSS protection** through proper data sanitization
 - **Password security** with bcrypt hashing (10 salt rounds)
 
@@ -373,7 +376,7 @@ Update your environment variables for production:
 
 ```bash
 NODE_ENV=production
-PORT=5001  # Or assigned by hosting platform
+PORT=5001
 MONGODB_URI=your_production_mongodb_uri
 JWT_SECRET=your_super_secure_production_jwt_secret
 FRONTEND_URL=https://your-frontend-domain.com
