@@ -83,72 +83,84 @@ const ChatContainer = () => {
 
             {dateMessages.map((message, index) => {
               const isOwnMessage = message.senderId === authUser._id;
-              const showAvatar =
+              const isFirstInGroup =
                 index === 0 ||
                 dateMessages[index - 1].senderId !== message.senderId;
+              const showAvatar = !isOwnMessage && isFirstInGroup;
+
+              const bubbleClasses = `max-w-[85%] md:max-w-[320px] px-3 py-2 shadow-md ${
+                isOwnMessage
+                  ? "bg-primary text-primary-content rounded-2xl rounded-bl-md"
+                  : "bg-base-200 rounded-2xl rounded-br-md"
+              } ${message.isPending ? "opacity-60" : ""}`;
+
+              const metaRow = (
+                <div className="text-right text-[10px] opacity-70 flex gap-1 items-center justify-end mt-0.5">
+                  <time>{formatMessageTime(message.createdAt)}</time>
+                  {isOwnMessage &&
+                    (message.isPending ? (
+                      <Loader size={12} className="animate-spin" />
+                    ) : message.read ? (
+                      <CheckCheck size={12} />
+                    ) : (
+                      <Check size={12} />
+                    ))}
+                </div>
+              );
+
+              const bubbleContent = (
+                <>
+                  {message.image && (
+                    <a
+                      href={message.image}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block mb-1.5"
+                    >
+                      <img
+                        src={message.image}
+                        alt="Attachment"
+                        className="max-w-[200px] rounded-md object-cover"
+                        loading="lazy"
+                      />
+                    </a>
+                  )}
+                  {message.text && (
+                    <p className="break-words text-sm">{message.text}</p>
+                  )}
+                  {metaRow}
+                </>
+              );
 
               return (
                 <div
                   key={message._id}
-                  className={`chat ${isOwnMessage ? "chat-end" : "chat-start"}`}
+                  className={`flex ${isOwnMessage ? "justify-end" : "justify-start"} ${
+                    isFirstInGroup ? "mt-2" : "mt-1"
+                  }`}
                 >
-                  {showAvatar && (
-                    <div className="chat-image avatar">
-                      <div className="size-8 md:size-9 rounded-full border border-base-300">
-                        <img
-                          src={
-                            isOwnMessage
-                              ? authUser.profilePic || "/avatar.png"
-                              : selectedUser.profilePic || "/avatar.png"
-                          }
-                          alt="profile pic"
-                          className="object-cover"
-                        />
-                      </div>
+                  {!isOwnMessage ? (
+                    <div className="flex items-end gap-2 min-w-0 max-w-[85%] md:max-w-[calc(320px+2rem)]">
+                      {showAvatar ? (
+                        <div className="flex-shrink-0 pb-0.5">
+                          <div className="size-8 rounded-full overflow-hidden border border-base-300">
+                            <img
+                              src={
+                                selectedUser.profilePic || "/avatar.png"
+                              }
+                              alt="profile pic"
+                              className="size-full object-cover"
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="w-8 flex-shrink-0" />
+                      )}
+                      <div className={bubbleClasses}>{bubbleContent}</div>
                     </div>
+                  ) : (
+                    <div className={bubbleClasses}>{bubbleContent}</div>
                   )}
-
-                  <div
-                    className={`chat-bubble ${
-                      isOwnMessage
-                        ? "bg-primary/90 text-primary-content"
-                        : "bg-base-200"
-                    } ${message.isPending ? "opacity-60" : ""} flex flex-col px-3 py-2 shadow-sm`}
-                  >
-                    {message.image && (
-                      <a
-                        href={message.image}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mb-1.5"
-                      >
-                        <img
-                          src={message.image}
-                          alt="Attachment"
-                          className="max-w-[200px] rounded-md object-cover"
-                          loading="lazy"
-                        />
-                      </a>
-                    )}
-
-                    {message.text && (
-                      <p className="break-words">{message.text}</p>
-                    )}
-
-                    <div className="text-right text-[10px] opacity-70 flex gap-0.5 items-center justify-end">
-                      <time className="ml-1">
-                        {formatMessageTime(message.createdAt)}
-                      </time>
-                      {isOwnMessage &&
-                        (message.isPending ? (
-                          <Loader size={12} className="animate-spin" />
-                        ) : message.read ? (
-                          <CheckCheck size={12} />
-                        ) : (
-                          <Check size={12} />
-                        ))}
-                    </div>
-                  </div>
                 </div>
               );
             })}
@@ -182,18 +194,18 @@ const ChatContainer = () => {
 
         {/* Typing indicator */}
         {isTyping && (
-          <div className="chat chat-start">
-            <div className="chat-image avatar">
-              <div className="size-8 md:size-9 rounded-full border border-base-300">
-                <img
-                  src={selectedUser.profilePic || "/avatar.png"}
-                  alt="profile pic"
-                  className="object-cover"
-                />
+          <div className="flex justify-start mt-2">
+            <div className="flex items-end gap-2">
+              <div className="flex-shrink-0 pb-0.5">
+                <div className="size-8 rounded-full overflow-hidden border border-base-300">
+                  <img
+                    src={selectedUser.profilePic || "/avatar.png"}
+                    alt="profile pic"
+                    className="size-full object-cover"
+                  />
+                </div>
               </div>
-            </div>
-            <div className="chat-bubble bg-base-200 flex items-center gap-1.5">
-              <div className="flex gap-1">
+              <div className="bg-base-200 rounded-2xl rounded-br-md px-3 py-2 flex items-center gap-1.5">
                 <span className="w-2 h-2 bg-base-content/40 rounded-full animate-bounce"></span>
                 <span
                   className="w-2 h-2 bg-base-content/40 rounded-full animate-bounce"

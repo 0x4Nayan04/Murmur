@@ -16,16 +16,14 @@ const Sidebar = () => {
     getUsers();
   }, [getUsers]);
 
-  // Debounce search query
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchQuery);
-    }, 300); // 300ms delay
+    }, 300);
 
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Filter users based on online status and debounced search query
   const filteredUsers = useMemo(() => {
     return users
       .filter((user) => !showOnlineOnly || onlineUsers.includes(user._id))
@@ -37,8 +35,7 @@ const Sidebar = () => {
   if (isUsersLoading) return <SidebarSkeleton />;
 
   return (
-    <aside className='h-full w-20 lg:w-80 shrink-0 border-r border-base-300 flex flex-col overflow-hidden transition-all duration-300 bg-base-100/50 backdrop-blur-sm'>
-      {/* Header */}
+    <aside className='h-full w-20 lg:w-80 shrink-0 border-r border-base-300 flex flex-col overflow-hidden       transition-all duration-300 bg-base-100/50 backdrop-blur-sm'>
       <div className='border-b border-base-300 w-full p-4 lg:p-5'>
         <div className='flex items-center justify-between'>
           <div className='flex items-center gap-3'>
@@ -60,7 +57,6 @@ const Sidebar = () => {
           </div>
         </div>
 
-        {/* Search and filter */}
         <div className='mt-4 space-y-2'>
           <div className='relative hidden lg:block'>
             <Search className='absolute left-3 top-1/2 -translate-y-1/2 size-4 text-zinc-400' />
@@ -74,14 +70,14 @@ const Sidebar = () => {
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className='absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-base-200'>
+                className='absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1 transition-colors duration-200 hover:bg-base-200'>
                 <X className='size-3.5' />
               </button>
             )}
           </div>
 
           <div className='flex items-center justify-center lg:justify-start gap-2'>
-            <label className='cursor-pointer flex items-center gap-2 rounded-full px-2 py-1 lg:bg-base-200 transition-colors'>
+            <label className='cursor-pointer flex items-center gap-2 rounded-full px-2 py-1 transition-colors duration-200 hover:bg-base-200 lg:bg-base-200 lg:hover:bg-base-300'>
               <input
                 type='checkbox'
                 checked={showOnlineOnly}
@@ -96,23 +92,18 @@ const Sidebar = () => {
         </div>
       </div>
 
-      {/* User list */}
       <div className='overflow-y-auto overflow-x-hidden w-full py-3 pr-2 flex-1 min-h-0 scrollbar-thin'>
         {filteredUsers.length > 0 ? (
           filteredUsers.map((user) => (
             <button
               key={user._id}
               onClick={() => setSelectedUser(user)}
-              className={`
-                w-full p-2 lg:p-3 flex items-center gap-3 mb-1 mx-1 lg:mx-2 rounded-xl
-                hover:bg-base-200 transition-all duration-200
-                ${
-                  selectedUser?._id === user._id
-                    ? 'bg-primary/10 border border-primary/20'
-                    : 'border border-transparent'
-                }
-              `}>
-              <div className='relative mx-auto lg:mx-0'>
+              className={
+                selectedUser?._id === user._id
+                  ? 'w-full p-2 lg:p-3 flex flex-col lg:flex-row lg:items-center gap-2 lg:gap-3 mb-1 mx-1 lg:mx-2 rounded-xl border bg-primary/10 border-primary/20 transition-colors duration-200 hover:bg-primary/15 hover:border-primary/25'
+                  : 'w-full p-2 lg:p-3 flex flex-col lg:flex-row lg:items-center gap-2 lg:gap-3 mb-1 mx-1 lg:mx-2 rounded-xl border border-transparent transition-colors duration-200 hover:bg-base-200'
+              }>
+              <div className='relative mx-auto lg:mx-0 shrink-0'>
                 <img
                   src={user.profilePic || '/avatar.png'}
                   alt={user.fullName}
@@ -124,7 +115,19 @@ const Sidebar = () => {
                   </div>
                 )}
               </div>
-              {/* User info - only visible on larger screens */}
+              <div className='lg:hidden flex flex-col items-center justify-center min-w-0 flex-1 py-0.5'>
+                <span className='text-xs font-medium truncate w-full text-center'>
+                  {user.fullName}
+                </span>
+                <span
+                  className={`text-[10px] mt-0.5 ${
+                    onlineUsers.includes(user._id)
+                      ? 'text-green-600'
+                      : 'text-zinc-400'
+                  }`}>
+                  {onlineUsers.includes(user._id) ? 'Online' : 'Offline'}
+                </span>
+              </div>
               <div className='hidden lg:block text-left min-w-0 flex-1'>
                 <div className='font-medium truncate'>{user.fullName}</div>
                 <div className='flex items-center gap-1 text-sm'>

@@ -1,65 +1,91 @@
+import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAuthStore } from "../store/useAuthStore";
-import { LogOut, MessageSquare, User } from "lucide-react";
+import { LogOut, MessageSquare, User, ChevronDown } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 
 const Navbar = () => {
   const { logout, authUser } = useAuthStore();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, []);
 
   return (
-    <header
-      className="bg-base-100 border-b border-base-300 fixed w-full top-0 z-40 
-    backdrop-blur-lg bg-base-100/80"
-    >
-      <div className="container mx-auto px-4 h-16">
-        <div className="flex items-center justify-between h-full">
-          <div className="flex items-center gap-8">
-            <Link
-              to="/"
-              className="flex items-center gap-2.5 hover:opacity-80 transition-all"
-            >
-              <div className="size-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                <MessageSquare className="w-5 h-5 text-primary" />
-              </div>
-              <h1 className="text-lg font-bold tracking-wider bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent hover:scale-105 transition-transform duration-300">
-                Murmur
-              </h1>
-            </Link>
-          </div>
+    <header className="fixed top-0 left-0 right-0 z-40 h-16 w-full border-b border-base-300 bg-base-100/95 backdrop-blur-md">
+      <div className="flex h-full w-full items-center justify-between px-4 sm:px-6 lg:px-8">
+        <div className="flex min-w-0 flex-1 items-center">
+          <Link
+            to="/"
+            className="flex items-center gap-3 rounded-lg px-2 py-1.5 transition-colors duration-200 hover:bg-base-200"
+          >
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 sm:size-10">
+              <MessageSquare className="size-5 text-primary" />
+            </div>
+            <span className="text-lg font-bold tracking-tight text-base-content sm:text-xl">
+              Murmur
+            </span>
+          </Link>
+        </div>
 
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
+        <div className="flex shrink-0 items-center gap-3 sm:gap-4">
+          <ThemeToggle />
 
-            {authUser && (
-              <>
-                <Link
-                  to={"/profile"}
-                  className="btn btn-sm btn-ghost hover:bg-base-200 rounded-full px-3 transition-all duration-300 flex items-center gap-2"
-                  aria-label="Profile"
-                >
-                  <div className="size-8 rounded-full bg-primary/10 flex items-center justify-center">
+          {authUser && (
+            <div className="relative ml-2 border-l border-base-300 pl-3 sm:ml-4 sm:pl-4" ref={menuRef}>
+              <button
+                onClick={() => setMenuOpen((o) => !o)}
+                className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors duration-200 hover:bg-base-200 sm:gap-3 sm:px-3 sm:py-2"
+                aria-expanded={menuOpen}
+                aria-haspopup="true"
+              >
+                <div className="size-8 overflow-hidden rounded-full border-2 border-primary/20">
+                  <img
+                    src={authUser.profilePic || "/avatar.png"}
+                    alt={authUser.fullName}
+                    className="size-full object-cover"
+                  />
+                </div>
+                <span className="hidden max-w-[120px] truncate font-medium sm:block">
+                  {authUser.fullName}
+                </span>
+                <ChevronDown
+                  className={`size-4 text-base-content/60 transition-transform ${menuOpen ? "rotate-180" : ""}`}
+                />
+              </button>
+
+              {menuOpen && (
+                <div className="absolute right-0 top-full z-50 mt-2 w-48 overflow-hidden rounded-xl border border-base-300 bg-base-100 py-1 shadow-lg">
+                  <Link
+                    to="/profile"
+                    onClick={() => setMenuOpen(false)}
+                    className="flex items-center gap-2 px-4 py-2.5 text-sm transition-colors duration-200 hover:bg-base-200"
+                  >
                     <User className="size-4 text-primary" />
-                  </div>
-                  <span className="hidden sm:inline font-medium">
-                    My Profile
-                  </span>
-                </Link>
-
-                <button
-                  onClick={logout}
-                  className="btn btn-sm btn-ghost hover:bg-error/10 rounded-full px-3 transition-all duration-300 flex items-center gap-2"
-                  aria-label="Logout"
-                >
-                  <div className="size-8 rounded-full bg-error/10 flex items-center justify-center">
-                    <LogOut className="size-4 text-error" />
-                  </div>
-                  <span className="hidden sm:inline font-medium text-error">
-                    Sign Out
-                  </span>
-                </button>
-              </>
-            )}
-          </div>
+                    <span>My Profile</span>
+                  </Link>
+                  <button
+                    onClick={() => {
+                      setMenuOpen(false);
+                      logout();
+                    }}
+                    className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-error transition-colors duration-200 hover:bg-error/10"
+                  >
+                    <LogOut className="size-4" />
+                    <span>Sign Out</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </header>

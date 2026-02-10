@@ -151,8 +151,7 @@ const MessageInput = () => {
             />
             <button
               onClick={removeImage}
-              className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-base-200 hover:bg-base-300
-              flex items-center justify-center shadow-md transition-colors duration-200"
+              className="absolute -top-2 -right-2 flex size-6 items-center justify-center rounded-full bg-base-200 shadow-md transition-colors duration-200 hover:bg-base-300"
               type="button"
               disabled={isUploading}
             >
@@ -180,12 +179,11 @@ const MessageInput = () => {
           <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
             <button
               type="button"
-              className={`btn btn-circle btn-sm bg-base-100
-                    ${
-                      imagePreview
-                        ? "text-emerald-500"
-                        : "text-base-content/70 hover:text-base-content"
-                    }`}
+              className={`btn btn-circle btn-sm bg-base-100 transition-colors duration-200 ${
+                imagePreview
+                  ? "text-emerald-500 hover:bg-base-200"
+                  : "text-base-content/70 hover:bg-base-200 hover:text-base-content"
+              }`}
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploading}
             >
