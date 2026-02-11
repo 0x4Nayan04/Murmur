@@ -40,7 +40,10 @@ const Navbar = () => {
           <ThemeToggle />
 
           {authUser && (
-            <div className="relative ml-2 border-l border-base-300 pl-3 sm:ml-4 sm:pl-4" ref={menuRef}>
+            <div
+              className="relative ml-2 border-l border-base-300 pl-3 sm:ml-4 sm:pl-4"
+              ref={menuRef}
+            >
               <button
                 onClick={() => setMenuOpen((o) => !o)}
                 className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors duration-200 hover:bg-base-200 sm:gap-3 sm:px-3 sm:py-2"

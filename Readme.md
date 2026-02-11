@@ -280,29 +280,29 @@ murmur/
 ### Client → Server Events
 
 ```javascript
-socket.emit('typing', { receiverId: 'user_id' });
-socket.emit('stopTyping', { receiverId: 'user_id' });
+socket.emit("typing", { receiverId: "user_id" });
+socket.emit("stopTyping", { receiverId: "user_id" });
 ```
 
 ### Server → Client Events
 
 ```javascript
-socket.on('newMessage', (message) => {
+socket.on("newMessage", (message) => {
   /* Handle new message */
 });
-socket.on('userTyping', ({ senderId, isTyping }) => {
+socket.on("userTyping", ({ senderId, isTyping }) => {
   /* Update UI */
 });
-socket.on('getOnlineUsers', (userIds) => {
+socket.on("getOnlineUsers", (userIds) => {
   /* Update online status */
 });
-socket.on('messagesRead', ({ readBy, count }) => {
+socket.on("messagesRead", ({ readBy, count }) => {
   /* Mark as read */
 });
-socket.on('messageEdited', (message) => {
+socket.on("messageEdited", (message) => {
   /* Update message */
 });
-socket.on('messageDeleted', ({ messageId }) => {
+socket.on("messageDeleted", ({ messageId }) => {
   /* Remove message */
 });
 ```

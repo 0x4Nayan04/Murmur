@@ -18,7 +18,9 @@ const ThemeToggle = () => {
     <button
       onClick={toggleTheme}
       className="flex size-9 items-center justify-center rounded-lg transition-all duration-200 hover:bg-base-200 active:scale-95"
-      aria-label={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
+      aria-label={
+        theme === "light" ? "Switch to dark mode" : "Switch to light mode"
+      }
       type="button"
     >
       <div className="relative size-5 overflow-hidden">

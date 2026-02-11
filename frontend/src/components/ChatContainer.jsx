@@ -145,9 +145,7 @@ const ChatContainer = () => {
                         <div className="flex-shrink-0 pb-0.5">
                           <div className="size-8 rounded-full overflow-hidden border border-base-300">
                             <img
-                              src={
-                                selectedUser.profilePic || "/avatar.png"
-                              }
+                              src={selectedUser.profilePic || "/avatar.png"}
                               alt="profile pic"
                               className="size-full object-cover"
                             />
