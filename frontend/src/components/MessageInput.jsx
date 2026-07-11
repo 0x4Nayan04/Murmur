@@ -1,5 +1,5 @@
 import { Image, Send, X } from "lucide-react";
-import { useRef, useState, useEffect } from "react";
+import { useRef, useReducer, useEffect } from "react";
 import toast from "react-hot-toast";
 import { useChatStore } from "../store/useChatStore";
 import {
@@ -8,11 +8,35 @@ import {
   uploadToCloudinary,
 } from "../lib/cloudinary";
 
+const initialInputState = {
+  text: "",
+  imagePreview: null,
+  isUploading: false,
+};
+
+const inputReducer = (state, action) => {
+  switch (action.type) {
+    case "RESET":
+      return initialInputState;
+    case "SET_TEXT":
+      return { ...state, text: action.payload };
+    case "SET_IMAGE_PREVIEW":
+      return { ...state, imagePreview: action.payload };
+    case "SET_UPLOADING":
+      return { ...state, isUploading: action.payload };
+    case "CLEAR_SENT":
+      return { ...state, text: "", imagePreview: null };
+    case "CLEAR_IMAGE":
+      return { ...state, imagePreview: null };
+    default:
+      return state;
+  }
+};
+
 const MessageInput = () => {
-  const [text, setText] = useState("");
-  const [imagePreview, setImagePreview] = useState(null);
-  const [imageFile, setImageFile] = useState(null);
-  const [isUploading, setIsUploading] = useState(false);
+  const [inputState, dispatch] = useReducer(inputReducer, initialInputState);
+  const { text, imagePreview, isUploading } = inputState;
+  const imageFileRef = useRef(null);
   const fileInputRef = useRef(null);
   const typingTimeoutRef = useRef(null);
   const uploadOperationRef = useRef(null);
@@ -23,11 +47,8 @@ const MessageInput = () => {
 
   // Reset form state when selected user changes (BUG FIX: image showing on wrong user)
   useEffect(() => {
-    // Clear all input state when switching users
-    setText("");
-    setImagePreview(null);
-    setImageFile(null);
-    setIsUploading(false);
+    dispatch({ type: "RESET" });
+    imageFileRef.current = null;
     uploadOperationRef.current = null;
     if (fileInputRef.current) fileInputRef.current.value = "";
 
@@ -40,7 +61,7 @@ const MessageInput = () => {
 
   // Handle typing indicator
   const handleTextChange = (e) => {
-    setText(e.target.value);
+    dispatch({ type: "SET_TEXT", payload: e.target.value });
 
     if (!selectedUser) return;
 
@@ -88,21 +109,21 @@ const MessageInput = () => {
     }
 
     // Store the file for later upload
-    setImageFile(file);
+    imageFileRef.current = file;
 
     // Create preview
     const reader = new FileReader();
     reader.onloadend = () => {
       if (selectedUserIdRef.current === conversationId) {
-        setImagePreview(reader.result);
+        dispatch({ type: "SET_IMAGE_PREVIEW", payload: reader.result });
       }
     };
     reader.readAsDataURL(file);
   };
 
   const removeImage = () => {
-    setImagePreview(null);
-    setImageFile(null);
+    dispatch({ type: "CLEAR_IMAGE" });
+    imageFileRef.current = null;
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -118,16 +139,16 @@ const MessageInput = () => {
     const messageText = text.trim();
 
     try {
-      setIsUploading(true);
+      dispatch({ type: "SET_UPLOADING", payload: true });
 
       emitStopTyping(receiverId);
 
       let imageUrl = null;
 
       // Upload image to Cloudinary if present
-      if (imageFile) {
+      if (imageFileRef.current) {
         try {
-          imageUrl = await uploadToCloudinary(imageFile);
+          imageUrl = await uploadToCloudinary(imageFileRef.current);
         } catch (uploadError) {
           toast.error(uploadError.message || "Failed to upload image");
           return;
@@ -144,9 +165,8 @@ const MessageInput = () => {
       );
 
       if (sent && selectedUserIdRef.current === receiverId) {
-        setText("");
-        setImagePreview(null);
-        setImageFile(null);
+        dispatch({ type: "CLEAR_SENT" });
+        imageFileRef.current = null;
         if (fileInputRef.current) fileInputRef.current.value = "";
       }
     } catch (error) {
@@ -155,7 +175,7 @@ const MessageInput = () => {
     } finally {
       if (uploadOperationRef.current === operationId) {
         uploadOperationRef.current = null;
-        setIsUploading(false);
+        dispatch({ type: "SET_UPLOADING", payload: false });
       }
     }
   };

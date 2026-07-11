@@ -68,3 +68,34 @@
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
   background: oklch(0.5 0 0 / 0.5);
 }
+
+@keyframes ease-out-dot {
+  0%,
+  60%,
+  100% {
+    opacity: 0.4;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes ease-out-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.animate-ease-out-dot {
+  animation: ease-out-dot 1.4s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+.animate-ease-out-float {
+  animation: ease-out-float 2s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}

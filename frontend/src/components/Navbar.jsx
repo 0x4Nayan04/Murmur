@@ -52,6 +52,7 @@ const Navbar = () => {
               ref={menuRef}
             >
               <button
+                type="button"
                 onClick={() => setMenuOpen((o) => !o)}
                 className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors duration-200 hover:bg-base-200 sm:gap-3 sm:px-3 sm:py-2"
                 aria-expanded={menuOpen}
@@ -88,6 +89,7 @@ const Navbar = () => {
                     <span>My Profile</span>
                   </Link>
                   <button
+                    type="button"
                     onClick={() => {
                       setMenuOpen(false);
                       logout();

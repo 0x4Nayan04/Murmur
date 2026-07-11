@@ -3,6 +3,16 @@ import { useAuthStore } from "../store/useAuthStore";
 import { Camera, Calendar, Mail, Shield, User } from "lucide-react";
 import toast from "react-hot-toast";
 
+const formatDate = (dateString) => {
+  if (!dateString) return "N/A";
+  const date = new Date(dateString);
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+};
+
 const ProfilePage = () => {
   const { authUser, isUpdatingProfile, updateProfile } = useAuthStore();
   const [selectedImg, setSelectedImg] = useState(null);
@@ -46,16 +56,6 @@ const ProfilePage = () => {
         setSelectedImg(null);
       }
     };
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return "N/A";
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
   };
 
   return (
@@ -123,17 +123,17 @@ const ProfilePage = () => {
               </div>
               <div className="space-y-4">
                 <div>
-                  <label className="text-xs font-medium text-base-content/70 block mb-1.5">
+                  <span className="text-xs font-medium text-base-content/70 block mb-1.5">
                     Display Name
-                  </label>
+                  </span>
                   <div className="px-4 py-3 rounded-lg border border-base-300 bg-base-100 text-sm text-base-content">
                     {authUser?.fullName}
                   </div>
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-base-content/70 block mb-1.5">
+                  <span className="text-xs font-medium text-base-content/70 block mb-1.5">
                     Contact Email
-                  </label>
+                  </span>
                   <div className="px-4 py-3 rounded-lg border border-base-300 bg-base-100 text-sm text-base-content flex items-center gap-2">
                     <Mail className="size-4 text-base-content/50 shrink-0" />
                     {authUser?.email}

@@ -33,13 +33,15 @@ const Sidebar = ({ className = "" }) => {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
+  const onlineUserIds = useMemo(() => new Set(onlineUsers), [onlineUsers]);
+
   const filteredUsers = useMemo(() => {
-    return users
-      .filter((user) => !showOnlineOnly || onlineUsers.includes(user._id))
-      .filter((user) =>
-        user.fullName.toLowerCase().includes(debouncedSearch.toLowerCase()),
-      );
-  }, [users, showOnlineOnly, onlineUsers, debouncedSearch]);
+    const query = debouncedSearch.toLowerCase();
+    return users.filter((user) => {
+      if (showOnlineOnly && !onlineUserIds.has(user._id)) return false;
+      return user.fullName.toLowerCase().includes(query);
+    });
+  }, [users, showOnlineOnly, onlineUserIds, debouncedSearch]);
 
   if (isUsersLoading) return <SidebarSkeleton />;
 
@@ -60,7 +62,7 @@ const Sidebar = ({ className = "" }) => {
 
           <div>
             <span className="badge badge-primary">
-              {onlineUsers.includes(authUser?._id)
+              {onlineUserIds.has(authUser?._id)
                 ? Math.max(onlineUsers.length - 1, 0)
                 : onlineUsers.length}{" "}
               active now
@@ -136,7 +138,7 @@ const Sidebar = ({ className = "" }) => {
                     alt=""
                     className="size-12 object-cover rounded-full shadow-sm"
                   />
-                  {onlineUsers.includes(user._id) && (
+                  {onlineUserIds.has(user._id) && (
                     <div className="absolute -bottom-0.5 -right-0.5">
                       <span className="block size-3 bg-green-500 rounded-full ring-2 ring-base-100"></span>
                     </div>
@@ -146,7 +148,7 @@ const Sidebar = ({ className = "" }) => {
                   <div className="min-w-0 flex-1">
                     <div className="font-medium truncate">{user.fullName}</div>
                     <div className="flex items-center gap-1 text-sm">
-                      {onlineUsers.includes(user._id) ? (
+                      {onlineUserIds.has(user._id) ? (
                         <>
                           <Circle className="size-2 fill-green-500 text-green-500" />
                           <span className="text-green-600">Online</span>

@@ -70,17 +70,3 @@ export const uploadToCloudinary = async (file) => {
     throw error;
   }
 };
-
-/**
- * Convert file to base64 (fallback for old upload method)
- * @param {File} file - Image file
- * @returns {Promise<string>} - Base64 string
- */
-export const readFileAsDataURL = (file) => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-};

@@ -260,13 +260,13 @@ const ChatContainer = () => {
                 </div>
               </div>
               <div className="bg-base-200 rounded-2xl rounded-br-md px-3 py-2 flex items-center gap-1.5">
-                <span className="w-2 h-2 bg-base-content/40 rounded-full animate-bounce"></span>
+                <span className="w-2 h-2 bg-base-content/40 rounded-full animate-ease-out-dot"></span>
                 <span
-                  className="w-2 h-2 bg-base-content/40 rounded-full animate-bounce"
+                  className="w-2 h-2 bg-base-content/40 rounded-full animate-ease-out-dot"
                   style={{ animationDelay: "0.2s" }}
                 ></span>
                 <span
-                  className="w-2 h-2 bg-base-content/40 rounded-full animate-bounce"
+                  className="w-2 h-2 bg-base-content/40 rounded-full animate-ease-out-dot"
                   style={{ animationDelay: "0.4s" }}
                 ></span>
               </div>

@@ -49,6 +49,7 @@ const ChatHeader = () => {
         <div className="flex items-center gap-1 md:gap-2">
           {/* Close button */}
           <button
+            type="button"
             onClick={() => setSelectedUser(null)}
             className="btn btn-sm btn-circle btn-ghost transition-colors duration-200 hover:bg-base-200"
             aria-label="Close conversation"
