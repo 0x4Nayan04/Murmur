@@ -12,6 +12,7 @@ import {
 import { Link } from "react-router-dom";
 
 import AuthImagePattern from "../components/AuthImagePattern";
+import ThemeToggle from "../components/ThemeToggle";
 import toast from "react-hot-toast";
 
 const SignUpPage = () => {
@@ -51,7 +52,10 @@ const SignUpPage = () => {
   };
 
   return (
-    <main className="min-h-screen grid lg:grid-cols-2">
+    <main className="relative min-h-screen grid lg:grid-cols-2">
+      <div className="absolute top-4 right-4 z-10 sm:top-6 sm:right-6">
+        <ThemeToggle />
+      </div>
       {/* left side */}
       <div className="flex flex-col justify-center items-center p-6 sm:p-12">
         <div className="w-full max-w-md space-y-8">

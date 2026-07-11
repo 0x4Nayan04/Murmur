@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuthStore } from "../store/useAuthStore";
 import AuthImagePattern from "../components/AuthImagePattern";
+import ThemeToggle from "../components/ThemeToggle";
 import { Link } from "react-router-dom";
 import { Eye, EyeOff, Loader2, Lock, Mail, MessageSquare } from "lucide-react";
 
@@ -21,7 +22,10 @@ const LoginPage = () => {
   };
 
   return (
-    <main className="h-screen grid lg:grid-cols-2">
+    <main className="relative h-screen grid lg:grid-cols-2">
+      <div className="absolute top-4 right-4 z-10 sm:top-6 sm:right-6">
+        <ThemeToggle />
+      </div>
       {/* Left Side - Form */}
       <div className="flex flex-col justify-center items-center p-6 sm:p-12">
         <div className="w-full max-w-md space-y-8">
