@@ -1,5 +1,5 @@
 import { useChatStore } from "../store/useChatStore";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 
 import ChatHeader from "./ChatHeader";
 import ChatMessageBubble from "./ChatMessageBubble";
@@ -9,12 +9,14 @@ import MessageSkeleton from "./skeletons/MessageSkeleton";
 import TypingIndicator from "./TypingIndicator";
 import { useAuthStore } from "../store/useAuthStore";
 import { formatDateDivider, groupMessagesByDate } from "../lib/utils";
+import { AlertCircle, RefreshCw } from "lucide-react";
 
 const ChatContainer = () => {
   const {
     messages,
     getMessages,
     isMessagesLoading,
+    messagesError,
     selectedUser,
     loadOlderMessages,
     isOlderMessagesLoading,
@@ -24,6 +26,7 @@ const ChatContainer = () => {
   const { authUser } = useAuthStore();
   const messageEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
+  const loadMoreRef = useRef(null);
   const isLoadingOlderRef = useRef(false);
 
   const isTyping = selectedUser && typingUsers[selectedUser._id];
@@ -41,9 +44,9 @@ const ChatContainer = () => {
     }
   }, [messages, isTyping]);
 
-  const handleLoadOlderMessages = async () => {
+  const handleLoadOlderMessages = useCallback(async () => {
     const container = messagesContainerRef.current;
-    if (!container) return;
+    if (!container || isLoadingOlderRef.current) return;
 
     const previousScrollHeight = container.scrollHeight;
     const previousScrollTop = container.scrollTop;
@@ -55,11 +58,38 @@ const ChatContainer = () => {
         previousScrollTop + (container.scrollHeight - previousScrollHeight);
       isLoadingOlderRef.current = false;
     });
-  };
+  }, [loadOlderMessages]);
+
+  useEffect(() => {
+    const sentinel = loadMoreRef.current;
+    const container = messagesContainerRef.current;
+    if (!sentinel || !container || !messagePagination.hasMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (
+          entries[0]?.isIntersecting &&
+          !isOlderMessagesLoading &&
+          !isLoadingOlderRef.current
+        ) {
+          void handleLoadOlderMessages();
+        }
+      },
+      { root: container, rootMargin: "80px", threshold: 0 },
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [
+    messagePagination.hasMore,
+    isOlderMessagesLoading,
+    handleLoadOlderMessages,
+    selectedUser?._id,
+  ]);
 
   if (isMessagesLoading) {
     return (
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex flex-1 flex-col overflow-hidden">
         <ChatHeader />
         <MessageSkeleton />
         <MessageInput />
@@ -67,37 +97,53 @@ const ChatContainer = () => {
     );
   }
 
+  if (messagesError) {
+    return (
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <ChatHeader />
+        <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8 text-center">
+          <AlertCircle className="size-10 text-error/70" aria-hidden="true" />
+          <div>
+            <p className="font-medium">Could not load messages</p>
+            <p className="mt-1 text-sm text-base-content/60">{messagesError}</p>
+          </div>
+          <button
+            type="button"
+            className="btn btn-primary btn-sm gap-2"
+            onClick={() => getMessages(selectedUser._id)}
+          >
+            <RefreshCw className="size-4" />
+            Try again
+          </button>
+        </div>
+        <MessageInput />
+      </div>
+    );
+  }
+
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
+    <div className="flex flex-1 flex-col overflow-hidden">
       <ChatHeader />
 
       <div
         ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto p-2 md:p-4 space-y-4 bg-gradient-to-b from-base-100/20 to-base-100/40"
+        className="flex-1 space-y-4 overflow-y-auto bg-gradient-to-b from-base-100/20 to-base-100/40 p-2 md:p-4"
       >
         {messagePagination.hasMore && (
-          <div className="flex justify-center">
-            <button
-              type="button"
-              className="btn btn-ghost btn-xs"
-              onClick={handleLoadOlderMessages}
-              disabled={isOlderMessagesLoading}
-            >
-              {isOlderMessagesLoading ? (
-                <>
-                  <span className="loading loading-spinner loading-xs" />
-                  Loading…
-                </>
-              ) : (
-                "Load older messages"
-              )}
-            </button>
+          <div
+            ref={loadMoreRef}
+            className="flex justify-center py-2"
+            aria-hidden="true"
+          >
+            {isOlderMessagesLoading && (
+              <span className="loading loading-spinner loading-xs" />
+            )}
           </div>
         )}
 
         {Object.entries(groupedMessages).map(([dateKey, dateMessages]) => (
           <div key={dateKey} className="space-y-3">
-            <div className="divider text-xs text-base-content/50 my-2">
+            <div className="divider my-2 text-xs text-base-content/50">
               {formatDateDivider(dateKey)}
             </div>
 

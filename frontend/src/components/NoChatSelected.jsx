@@ -1,31 +1,22 @@
 import { MessageSquare } from "lucide-react";
+import EmptyState from "./ui/EmptyState";
 
-const NoChatSelected = ({ className = "" }) => {
-  return (
-    <div
-      className={`w-full flex flex-1 flex-col items-center justify-center p-16 bg-base-100/50 ${className}`}
-    >
-      <div className="max-w-md text-center space-y-6">
-        {/* Icon Display */}
-        <div className="flex justify-center gap-4 mb-4">
-          <div className="relative">
-            <div
-              className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center
-             justify-center animate-ease-out-float"
-            >
-              <MessageSquare className="w-8 h-8 text-primary " />
-            </div>
-          </div>
+const NoChatSelected = ({ className = "" }) => (
+  <div
+    className={`flex w-full flex-1 flex-col items-center justify-center bg-base-100/50 p-16 ${className}`}
+  >
+    <div className="max-w-md space-y-6 text-center">
+      <div className="mb-4 flex justify-center">
+        <div className="flex size-16 animate-ease-out-float items-center justify-center rounded-2xl bg-primary/10">
+          <MessageSquare className="size-8 text-primary" />
         </div>
-
-        {/* Welcome Text */}
-        <h2 className="text-2xl font-bold">Welcome to Murmur!</h2>
-        <p className="text-base-content/60">
-          Select a contact to start a conversation
-        </p>
       </div>
+      <EmptyState
+        title="Welcome to Murmur!"
+        description="Select a contact to start a conversation"
+      />
     </div>
-  );
-};
+  </div>
+);
 
 export default NoChatSelected;

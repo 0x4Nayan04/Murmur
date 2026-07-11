@@ -3,7 +3,7 @@ import { useChatStore } from "../store/useChatStore";
 import { useAuthStore } from "../store/useAuthStore";
 import SidebarSkeleton from "./skeletons/SidebarSkeleton";
 import SidebarUserItem from "./SidebarUserItem";
-import { Users, Search, MessageCircle, X } from "lucide-react";
+import { Users, Search, MessageCircle, X, AlertCircle, RefreshCw } from "lucide-react";
 import { normalizeId } from "../lib/utils";
 
 const Sidebar = ({ className = "" }) => {
@@ -13,6 +13,7 @@ const Sidebar = ({ className = "" }) => {
     selectedUser,
     setSelectedUser,
     isUsersLoading,
+    usersError,
     unreadCounts,
   } = useChatStore();
   const { onlineUsers, authUser } = useAuthStore();
@@ -48,17 +49,39 @@ const Sidebar = ({ className = "" }) => {
 
   if (isUsersLoading) return <SidebarSkeleton />;
 
+  if (usersError) {
+    return (
+      <aside
+        className={`flex h-full w-full shrink-0 flex-col items-center justify-center gap-4 overflow-hidden border-r border-base-300 bg-base-100/50 p-6 text-center backdrop-blur-sm lg:w-80 ${className}`}
+      >
+        <AlertCircle className="size-10 text-error/70" aria-hidden="true" />
+        <div>
+          <p className="font-medium">Could not load connections</p>
+          <p className="mt-1 text-sm text-base-content/60">{usersError}</p>
+        </div>
+        <button
+          type="button"
+          className="btn btn-primary btn-sm gap-2"
+          onClick={() => getUsers()}
+        >
+          <RefreshCw className="size-4" />
+          Try again
+        </button>
+      </aside>
+    );
+  }
+
   return (
     <aside
-      className={`h-full w-full lg:w-80 shrink-0 border-r border-base-300 flex flex-col overflow-hidden transition-all duration-300 bg-base-100/50 backdrop-blur-sm ${className}`}
+      className={`flex h-full w-full shrink-0 flex-col overflow-hidden border-r border-base-300 bg-base-100/50 backdrop-blur-sm transition-all duration-300 lg:w-80 ${className}`}
     >
-      <div className="border-b border-base-300 w-full p-4 lg:p-5">
+      <div className="w-full border-b border-base-300 p-4 lg:p-5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="bg-primary/10 p-2 rounded-full">
+            <div className="rounded-full bg-primary/10 p-2">
               <MessageCircle className="size-5 text-primary" />
             </div>
-            <h2 className="font-semibold text-lg">Connections</h2>
+            <h2 className="text-lg font-semibold">Connections</h2>
           </div>
 
           <div>
@@ -68,7 +91,7 @@ const Sidebar = ({ className = "" }) => {
 
         <div className="mt-4 space-y-2">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-zinc-400" />
+            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-base-content/40" />
             <input
               type="text"
               placeholder="Find people..."
@@ -90,7 +113,7 @@ const Sidebar = ({ className = "" }) => {
           </div>
 
           <div className="flex items-center justify-start gap-2">
-            <label className="cursor-pointer flex items-center gap-2 rounded-full px-2 py-1 transition-colors duration-200 bg-base-200 hover:bg-base-300">
+            <label className="flex cursor-pointer items-center gap-2 rounded-full bg-base-200 px-2 py-1 transition-colors duration-200 hover:bg-base-300">
               <input
                 type="checkbox"
                 checked={showOnlineOnly}
@@ -103,7 +126,7 @@ const Sidebar = ({ className = "" }) => {
         </div>
       </div>
 
-      <div className="overflow-y-auto overflow-x-hidden w-full py-3 pr-2 flex-1 min-h-0 scrollbar-thin">
+      <div className="min-h-0 w-full flex-1 overflow-y-auto overflow-x-hidden py-3 pr-2 scrollbar-thin">
         {filteredUsers.length > 0 ? (
           filteredUsers.map((user) => (
             <SidebarUserItem
@@ -116,9 +139,9 @@ const Sidebar = ({ className = "" }) => {
             />
           ))
         ) : (
-          <div className="flex flex-col items-center justify-center h-40 text-zinc-500">
-            <Users className="size-10 opacity-20 mb-2" />
-            <p className="text-center px-4">
+          <div className="flex h-40 flex-col items-center justify-center text-base-content/50">
+            <Users className="mb-2 size-10 opacity-20" />
+            <p className="px-4 text-center">
               {showOnlineOnly
                 ? "No one is active right now"
                 : searchQuery

@@ -13,10 +13,10 @@ import { Link } from "react-router-dom";
 
 import AuthImagePattern from "../components/AuthImagePattern";
 import ThemeToggle from "../components/ThemeToggle";
-import toast from "react-hot-toast";
-
+import FormFieldError from "../components/ui/FormFieldError";
 const SignUpPage = () => {
   const [showPassword, setShowPassword] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState({});
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -25,34 +25,52 @@ const SignUpPage = () => {
 
   const { signup, isSigningUp } = useAuthStore();
 
-  const validateForm = () => {
-    if (!formData.fullName.trim()) return toast.error("Full name is required");
-    if (!formData.email.trim()) return toast.error("Email is required");
-    if (!/\S+@\S+\.\S+/.test(formData.email))
-      return toast.error("Invalid email format");
-    if (!formData.password) return toast.error("Password is required");
-    if (formData.password.length < 6)
-      return toast.error("Password must be at least 6 characters");
-
-    return true;
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    const success = validateForm();
-
-    if (success === true) {
-      await signup({
-        fullName: formData.fullName.trim(),
-        email: formData.email.trim().toLowerCase(),
-        password: formData.password,
+  const updateField = (field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    if (fieldErrors[field]) {
+      setFieldErrors((prev) => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
       });
     }
   };
 
+  const validateForm = () => {
+    const errors = {};
+    if (!formData.fullName.trim()) errors.fullName = "Full name is required";
+    if (!formData.email.trim()) errors.email = "Email is required";
+    else if (!/\S+@\S+\.\S+/.test(formData.email))
+      errors.email = "Invalid email format";
+    if (!formData.password) errors.password = "Password is required";
+    else if (formData.password.length < 6)
+      errors.password = "Password must be at least 6 characters";
+    return errors;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setFieldErrors({});
+
+    const errors = validateForm();
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      return;
+    }
+
+    const result = await signup({
+      fullName: formData.fullName.trim(),
+      email: formData.email.trim().toLowerCase(),
+      password: formData.password,
+    });
+
+    if (!result.success) {
+      setFieldErrors(result.fieldErrors);
+    }
+  };
+
   return (
-    <main className="relative min-h-screen grid lg:grid-cols-2">
+    <main id="main-content" className="relative grid min-h-screen lg:grid-cols-2">
       <div className="absolute top-4 right-4 z-10 sm:top-6 sm:right-6">
         <ThemeToggle />
       </div>
@@ -75,7 +93,7 @@ const SignUpPage = () => {
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6" noValidate>
             <div className="form-control">
               <label className="label" htmlFor="signup-name">
                 <span className="label-text font-medium">Your Name</span>
@@ -89,15 +107,23 @@ const SignUpPage = () => {
                   type="text"
                   name="name"
                   autoComplete="name"
-                  className="input input-bordered w-full pl-10 bg-base-200 text-base-content"
+                  className={`input input-bordered w-full pl-10 bg-base-200 text-base-content focus:border-primary transition-colors ${
+                    fieldErrors.fullName ? "input-error" : ""
+                  }`}
                   placeholder="What should we call you?"
                   value={formData.fullName}
-                  onChange={(e) =>
-                    setFormData({ ...formData, fullName: e.target.value })
+                  onChange={(e) => updateField("fullName", e.target.value)}
+                  aria-invalid={Boolean(fieldErrors.fullName)}
+                  aria-describedby={
+                    fieldErrors.fullName ? "signup-name-error" : undefined
                   }
                   required
                 />
               </div>
+              <FormFieldError
+                id="signup-name-error"
+                message={fieldErrors.fullName}
+              />
             </div>
 
             <div className="form-control">
@@ -113,15 +139,23 @@ const SignUpPage = () => {
                   type="email"
                   name="email"
                   autoComplete="email"
-                  className="input input-bordered w-full pl-10 bg-base-200 text-base-content"
+                  className={`input input-bordered w-full pl-10 bg-base-200 text-base-content focus:border-primary transition-colors ${
+                    fieldErrors.email ? "input-error" : ""
+                  }`}
                   placeholder="Your email stays private"
                   value={formData.email}
-                  onChange={(e) =>
-                    setFormData({ ...formData, email: e.target.value })
+                  onChange={(e) => updateField("email", e.target.value)}
+                  aria-invalid={Boolean(fieldErrors.email)}
+                  aria-describedby={
+                    fieldErrors.email ? "signup-email-error" : undefined
                   }
                   required
                 />
               </div>
+              <FormFieldError
+                id="signup-email-error"
+                message={fieldErrors.email}
+              />
             </div>
 
             <div className="form-control">
@@ -137,11 +171,15 @@ const SignUpPage = () => {
                   type={showPassword ? "text" : "password"}
                   name="password"
                   autoComplete="new-password"
-                  className="input input-bordered w-full pl-10 bg-base-200 text-base-content"
+                  className={`input input-bordered w-full pl-10 bg-base-200 text-base-content focus:border-primary transition-colors ${
+                    fieldErrors.password ? "input-error" : ""
+                  }`}
                   placeholder="At least 6 characters"
                   value={formData.password}
-                  onChange={(e) =>
-                    setFormData({ ...formData, password: e.target.value })
+                  onChange={(e) => updateField("password", e.target.value)}
+                  aria-invalid={Boolean(fieldErrors.password)}
+                  aria-describedby={
+                    fieldErrors.password ? "signup-password-error" : undefined
                   }
                   minLength={6}
                   required
@@ -160,6 +198,10 @@ const SignUpPage = () => {
                   )}
                 </button>
               </div>
+              <FormFieldError
+                id="signup-password-error"
+                message={fieldErrors.password}
+              />
             </div>
 
             <button

@@ -23,7 +23,7 @@ const MessageInput = () => {
   });
 
   return (
-    <div className="p-4 bg-base-100/50 backdrop-blur-sm border-t border-base-300">
+    <div className="border-t border-base-300 bg-base-100/50 p-4 backdrop-blur-sm pb-[max(1rem,env(safe-area-inset-bottom))]">
       {imagePreview && (
         <div className="mb-3 relative group">
           <div className="max-w-[200px]">
@@ -34,7 +34,7 @@ const MessageInput = () => {
             />
             <button
               onClick={removeImage}
-              className="absolute -top-2 -right-2 flex size-6 items-center justify-center rounded-full bg-base-200 shadow-md transition-colors duration-200 hover:bg-base-300"
+              className="icon-btn-focus absolute -top-2 -right-2 flex size-6 items-center justify-center rounded-full bg-base-200 shadow-md transition-colors duration-200 hover:bg-base-300"
               type="button"
               disabled={isUploading}
               aria-label="Remove image attachment"
@@ -63,7 +63,7 @@ const MessageInput = () => {
           <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
             <button
               type="button"
-              className={`btn btn-circle btn-sm bg-base-100 transition-colors duration-200 ${
+              className={`icon-btn-focus btn btn-circle btn-sm bg-base-100 transition-colors duration-200 ${
                 imagePreview
                   ? "text-emerald-500 hover:bg-base-200"
                   : "text-base-content/70 hover:bg-base-200 hover:text-base-content"
@@ -88,7 +88,7 @@ const MessageInput = () => {
 
         <button
           type="submit"
-          className={`btn btn-sm btn-circle ${
+          className={`icon-btn-focus btn btn-sm btn-circle ${
             canSend
               ? "btn-primary text-primary-content"
               : "btn-neutral opacity-50"

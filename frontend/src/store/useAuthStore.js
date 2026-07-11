@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { axiosInstance } from "../lib/axios.js";
 import { getSocketUrl } from "../lib/config.js";
-import { getApiErrorMessage } from "../lib/utils.js";
+import { getApiErrorMessage, showApiError } from "../lib/utils.js";
 import toast from "react-hot-toast";
 import { io } from "socket.io-client";
 import { useChatStore } from "./useChatStore.js";
@@ -21,6 +21,7 @@ export const useAuthStore = create((set, get) => ({
   isCheckingAuth: true,
   onlineUsers: [],
   socket: null,
+  isSocketConnected: false,
 
   checkAuth: async () => {
     try {
@@ -52,10 +53,11 @@ export const useAuthStore = create((set, get) => ({
       await get().refreshAuthUser();
       toast.success("Account created successfully");
       get().connectSocket();
-      return true;
+      return { success: true, fieldErrors: {} };
     } catch (error) {
-      toast.error(getApiErrorMessage(error, "Failed to sign up"));
-      return false;
+      const { fieldErrors, message } = showApiError(error, "Failed to sign up");
+      if (message) toast.error(message);
+      return { success: false, fieldErrors };
     } finally {
       set({ isSigningUp: false });
     }
@@ -69,10 +71,11 @@ export const useAuthStore = create((set, get) => ({
       await get().refreshAuthUser();
       toast.success("Logged in successfully");
       get().connectSocket();
-      return true;
+      return { success: true, fieldErrors: {} };
     } catch (error) {
-      toast.error(getApiErrorMessage(error, "Failed to log in"));
-      return false;
+      const { fieldErrors, message } = showApiError(error, "Failed to log in");
+      if (message) toast.error(message);
+      return { success: false, fieldErrors };
     } finally {
       set({ isLoggingIn: false });
     }
@@ -85,7 +88,9 @@ export const useAuthStore = create((set, get) => ({
       toast.success("Logged out successfully");
       get().disconnectSocket();
     } catch (error) {
-      toast.error(getApiErrorMessage(error, "Failed to log out"));
+      if (error.response?.status !== 401) {
+        toast.error(getApiErrorMessage(error, "Failed to log out"));
+      }
       set({ authUser: null });
       get().disconnectSocket();
     }
@@ -99,10 +104,14 @@ export const useAuthStore = create((set, get) => ({
       });
       set({ authUser: toSafeUser(res.data) });
       toast.success("Profile updated successfully");
-      return true;
+      return { success: true, fieldErrors: {} };
     } catch (error) {
-      toast.error(getApiErrorMessage(error, "Failed to update profile"));
-      return false;
+      const { fieldErrors, message } = showApiError(
+        error,
+        "Failed to update profile",
+      );
+      if (message) toast.error(message);
+      return { success: false, fieldErrors };
     } finally {
       set({ isUpdatingProfile: false });
     }
@@ -118,17 +127,27 @@ export const useAuthStore = create((set, get) => ({
 
     set({ socket: newSocket });
 
+    newSocket.on("connect", () => {
+      set({ isSocketConnected: true });
+    });
+
+    newSocket.on("disconnect", () => {
+      set({ isSocketConnected: false });
+    });
+
     newSocket.on("getOnlineUsers", (userIds) => {
       set({ onlineUsers: userIds });
     });
 
     newSocket.on("connect_error", (error) => {
+      set({ isSocketConnected: false });
       console.error("Socket connection error:", error.message);
+      toast.error("Connection lost. Retrying…");
     });
   },
   disconnectSocket: () => {
     useChatStore.getState().unsubscribeFromMessages();
     get().socket?.disconnect();
-    set({ socket: null, onlineUsers: [] });
+    set({ socket: null, onlineUsers: [], isSocketConnected: false });
   },
 }));

@@ -4,10 +4,16 @@ import Message from "../models/message.model.js";
 import cloudinary from "../lib/cloudinary.js";
 import {
   findSenderMessage,
+  InvalidImageError,
   MessageForbiddenError,
   MessageNotFoundError,
   resolveMessageImageUrl,
 } from "../lib/messageHelpers.js";
+import {
+  extractCloudinaryPublicId,
+  isCloudinaryUrl,
+} from "../lib/imageValidation.js";
+import { logger } from "../lib/logger.js";
 import { emitToUser } from "../lib/socket.js";
 
 const sendMessageAccessError = (error, res) => {
@@ -26,6 +32,9 @@ const sendMessageAccessError = (error, res) => {
 
 export const getUsersForSidebar = async (req, res) => {
   try {
+    // Intentional: all authenticated users can browse the global user directory
+    // (demo-scope discovery). Replace with contact/search-based discovery for
+    // private deployments.
     const loggedInUserId = req.user._id;
     const filteredUsers = await User.find({
       _id: { $ne: loggedInUserId },
@@ -113,6 +122,10 @@ export const sendMessage = async (req, res) => {
 
     res.status(201).json(newMessage);
   } catch (error) {
+    if (error instanceof InvalidImageError) {
+      return res.status(400).json({ error: error.message });
+    }
+
     console.log("Error in sendMessage controller: ", error.message);
     res.status(500).json({ error: "Internal server error" });
   }
@@ -138,8 +151,8 @@ export const markMessagesAsRead = async (req, res) => {
       },
     );
 
-    emitToUser(senderId, "messagesRead", {
-      readBy: receiverId,
+    emitToUser(String(senderId), "messagesRead", {
+      readBy: String(receiverId),
       count: result.modifiedCount,
     });
 
@@ -233,6 +246,21 @@ export const deleteMessage = async (req, res) => {
       return res.status(400).json({
         error: "Message already deleted",
       });
+    }
+
+    const imageUrl = message.image;
+    if (imageUrl && isCloudinaryUrl(imageUrl)) {
+      const publicId = extractCloudinaryPublicId(imageUrl);
+      if (publicId) {
+        try {
+          await cloudinary.uploader.destroy(publicId);
+        } catch (destroyError) {
+          logger.warn("Failed to delete Cloudinary asset", {
+            publicId,
+            error: destroyError.message,
+          });
+        }
+      }
     }
 
     message.isDeleted = true;

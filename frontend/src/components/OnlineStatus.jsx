@@ -8,7 +8,7 @@ const OnlineStatus = ({ isOnline, className = "" }) => (
         <span className="text-green-600">Online</span>
       </>
     ) : (
-      <span className="text-zinc-400">Offline</span>
+      <span className="text-base-content/50">Offline</span>
     )}
   </div>
 );

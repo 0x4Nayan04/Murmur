@@ -17,12 +17,17 @@ axiosInstance.interceptors.request.use(
 );
 
 const logResponseError = (status) => {
-  if (status === 500) {
+  if (status >= 500) {
     console.error("Server error - please try again later");
   }
 };
 
-const logNetworkError = () => {
+const logNetworkError = (error) => {
+  if (error.code === "ECONNABORTED") {
+    console.error("Request timed out - server took too long to respond");
+    return;
+  }
+
   console.error("Network error - check your internet connection");
 };
 
@@ -35,7 +40,7 @@ axiosInstance.interceptors.response.use(
     } else if (error.response) {
       logResponseError(error.response.status);
     } else {
-      logNetworkError();
+      logNetworkError(error);
     }
     return Promise.reject(error);
   },

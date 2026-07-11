@@ -1,4 +1,5 @@
 import Navbar from "./components/Navbar";
+import ErrorBoundary from "./components/ErrorBoundary";
 import { AppRoutes, AuthLoadingScreen } from "./components/AppRoutes";
 
 import { useLocation } from "react-router-dom";
@@ -43,9 +44,24 @@ const App = () => {
 
   return (
     <>
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-content"
+      >
+        Skip to main content
+      </a>
       {!isAuthRoute && <Navbar />}
-      <AppRoutes authUser={authUser} />
-      <Toaster />
+      <ErrorBoundary>
+        <AppRoutes authUser={authUser} />
+      </ErrorBoundary>
+      <Toaster
+        position="top-center"
+        toastOptions={{
+          className:
+            "!bg-base-100 !text-base-content !border !border-base-300 !shadow-lg",
+          duration: 4000,
+        }}
+      />
     </>
   );
 };

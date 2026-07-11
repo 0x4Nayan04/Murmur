@@ -4,6 +4,7 @@ import {
   uploadToCloudinary,
   validateImageFile,
 } from "../lib/cloudinary";
+import { getApiErrorMessage } from "../lib/utils";
 
 const initialInputState = {
   text: "",
@@ -167,7 +168,9 @@ export const useMessageComposer = ({
       });
     } catch (error) {
       console.error("Failed to send message:", error);
-      toast.error(error.message || "Failed to send message");
+      toast.error(
+        getApiErrorMessage(error, error.message || "Failed to send message"),
+      );
     } finally {
       if (uploadOperationRef.current === operationId) {
         uploadOperationRef.current = null;

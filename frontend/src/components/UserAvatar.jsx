@@ -1,3 +1,5 @@
+import { getAvatarSrc } from "../lib/avatar";
+
 const SIZE_CLASSES = {
   sm: "size-8",
   md: "size-10 md:size-12",
@@ -18,7 +20,7 @@ const UserAvatar = ({
   return (
     <div className={`relative shrink-0 ${className}`}>
       <img
-        src={profilePic || "/avatar.png"}
+        src={getAvatarSrc(profilePic)}
         alt={alt}
         className={`${sizeClass} object-cover rounded-full shadow-sm ${imageClassName}`}
       />

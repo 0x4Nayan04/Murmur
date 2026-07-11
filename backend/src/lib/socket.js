@@ -4,6 +4,8 @@ import express from "express";
 import cookieParser from "cookie-parser";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
+import { logger } from "./logger.js";
+import { isValidObjectId } from "./validation.js";
 
 dotenv.config();
 
@@ -12,7 +14,6 @@ app.use(cookieParser());
 
 const server = http.createServer(app);
 
-// Configure CORS for socket.io to match the main app CORS settings
 const allowedOrigins =
   process.env.NODE_ENV === "production"
     ? [process.env.FRONTEND_URL]
@@ -52,7 +53,6 @@ const parseCookies = (cookieHeader = "") => {
   );
 };
 
-// Authenticate every socket with the httpOnly JWT cookie — never trust query.userId
 io.use((socket, next) => {
   try {
     const cookies = parseCookies(socket.handshake.headers.cookie);
@@ -70,61 +70,122 @@ io.use((socket, next) => {
     socket.userId = String(decoded.userId);
     next();
   } catch (error) {
-    console.warn("Socket auth failed:", error.message);
+    logger.warn("Socket auth failed", { error: error.message });
     next(new Error("Unauthorized - Invalid Token"));
   }
 });
 
+// Process-local presence map. Single-instance only; use @socket.io/redis-adapter
+// when running multiple replicas. Each user can have multiple socket IDs (tabs).
 const userSocketMap = {};
 
+const TYPING_RATE_LIMIT = 20;
+const TYPING_RATE_WINDOW_MS = 10_000;
+const typingRateLimits = new Map();
+
+const addUserSocket = (userId, socketId) => {
+  if (!userSocketMap[userId]) {
+    userSocketMap[userId] = new Set();
+  }
+  userSocketMap[userId].add(socketId);
+};
+
+const removeUserSocket = (userId, socketId) => {
+  const sockets = userSocketMap[userId];
+  if (!sockets) return;
+
+  sockets.delete(socketId);
+  if (sockets.size === 0) {
+    delete userSocketMap[userId];
+  }
+};
+
+const getOnlineUserIds = () => Object.keys(userSocketMap);
+
+const isTypingRateLimited = (socketId) => {
+  const now = Date.now();
+  let entry = typingRateLimits.get(socketId);
+
+  if (!entry || now >= entry.resetAt) {
+    entry = { count: 0, resetAt: now + TYPING_RATE_WINDOW_MS };
+    typingRateLimits.set(socketId, entry);
+  }
+
+  entry.count += 1;
+  return entry.count > TYPING_RATE_LIMIT;
+};
+
+const isValidTypingTarget = (senderId, receiverId) => {
+  if (!receiverId || typeof receiverId !== "string") {
+    return false;
+  }
+
+  if (!isValidObjectId(receiverId)) {
+    return false;
+  }
+
+  return receiverId !== senderId;
+};
+
+const handleTypingEvent = (socket, receiverId, isTyping) => {
+  const userId = socket.userId;
+
+  if (isTypingRateLimited(socket.id)) {
+    return;
+  }
+
+  if (!isValidTypingTarget(userId, receiverId)) {
+    return;
+  }
+
+  emitToUser(receiverId, "userTyping", {
+    senderId: userId,
+    isTyping,
+  });
+};
+
 export function getReceiverSocketId(userId) {
-  return userSocketMap[userId];
+  const sockets = userSocketMap[userId];
+  if (!sockets || sockets.size === 0) return null;
+  return [...sockets][0];
 }
 
 export function emitToUser(userId, event, payload) {
-  const socketId = getReceiverSocketId(userId);
-  if (!socketId) return;
+  const sockets = userSocketMap[String(userId)];
+  if (!sockets) return;
 
-  io.to(socketId).emit(event, payload);
+  for (const socketId of sockets) {
+    io.to(socketId).emit(event, payload);
+  }
 }
 
 io.on("connection", (socket) => {
-  console.log("A user connected", socket.id);
+  logger.info("Socket connected", { socketId: socket.id });
 
   const userId = socket.userId;
 
   if (!userId) {
-    console.warn("Socket connection rejected: missing authenticated userId");
+    logger.warn("Socket connection rejected: missing authenticated userId");
     socket.disconnect(true);
     return;
   }
 
-  userSocketMap[userId] = socket.id;
-
-  io.emit("getOnlineUsers", Object.keys(userSocketMap));
+  addUserSocket(userId, socket.id);
+  io.emit("getOnlineUsers", getOnlineUserIds());
 
   socket.on("typing", (data) => {
-    const { receiverId } = data;
-    emitToUser(receiverId, "userTyping", {
-      senderId: userId,
-      isTyping: true,
-    });
+    handleTypingEvent(socket, data?.receiverId, true);
   });
 
   socket.on("stopTyping", (data) => {
-    const { receiverId } = data;
-    emitToUser(receiverId, "userTyping", {
-      senderId: userId,
-      isTyping: false,
-    });
+    handleTypingEvent(socket, data?.receiverId, false);
   });
 
   socket.on("disconnect", () => {
-    console.log("A user disconnected", socket.id);
-    if (userSocketMap[userId] === socket.id) {
-      delete userSocketMap[userId];
-      io.emit("getOnlineUsers", Object.keys(userSocketMap));
-    }
+    logger.info("Socket disconnected", { socketId: socket.id, userId });
+    typingRateLimits.delete(socket.id);
+    removeUserSocket(userId, socket.id);
+    io.emit("getOnlineUsers", getOnlineUserIds());
   });
 });
 

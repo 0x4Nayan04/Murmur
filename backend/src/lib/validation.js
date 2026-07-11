@@ -1,4 +1,15 @@
 import { z } from "zod";
+import mongoose from "mongoose";
+
+export const isValidObjectId = (value) =>
+  mongoose.Types.ObjectId.isValid(value) &&
+  String(new mongoose.Types.ObjectId(value)) === value;
+
+const objectIdParam = (label) =>
+  z
+    .string()
+    .min(1, `${label} is required`)
+    .refine(isValidObjectId, { message: `Invalid ${label} format` });
 
 // ==================== AUTH VALIDATION SCHEMAS ====================
 
@@ -40,9 +51,17 @@ export const loginSchema = z.object({
   }),
 });
 
+const base64ImageSchema = z
+  .string()
+  .min(1, "Profile pic is required")
+  .refine(
+    (value) => /^data:image\/(jpeg|jpg|png|gif|webp);base64,/i.test(value),
+    "Profile picture must be a valid base64 image",
+  );
+
 export const updateProfileSchema = z.object({
   body: z.object({
-    profilePic: z.string().url("Invalid image URL").optional(),
+    profilePic: base64ImageSchema,
   }),
 });
 
@@ -58,7 +77,7 @@ export const sendMessageSchema = z.object({
       message: "Message must contain either text or image",
     }),
   params: z.object({
-    id: z.string().min(1, "Receiver ID is required"),
+    id: objectIdParam("Receiver ID"),
   }),
 });
 
@@ -71,25 +90,25 @@ export const editMessageSchema = z.object({
       .min(1, "Message text cannot be empty"),
   }),
   params: z.object({
-    messageId: z.string().min(1, "Message ID is required"),
+    messageId: objectIdParam("Message ID"),
   }),
 });
 
 export const deleteMessageSchema = z.object({
   params: z.object({
-    messageId: z.string().min(1, "Message ID is required"),
+    messageId: objectIdParam("Message ID"),
   }),
 });
 
 export const markMessagesAsReadSchema = z.object({
   params: z.object({
-    id: z.string().min(1, "Sender ID is required"),
+    id: objectIdParam("Sender ID"),
   }),
 });
 
 export const getMessagesSchema = z.object({
   params: z.object({
-    id: z.string().min(1, "User ID is required"),
+    id: objectIdParam("User ID"),
   }),
   query: z.object({
     page: z

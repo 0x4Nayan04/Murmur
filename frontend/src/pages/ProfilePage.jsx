@@ -1,8 +1,11 @@
 import { useState } from "react";
 import { useAuthStore } from "../store/useAuthStore";
 import { validateImageFile } from "../lib/cloudinary";
-import { Camera, Calendar, Mail, Shield, User } from "lucide-react";
+import FormFieldError from "../components/ui/FormFieldError";
 import toast from "react-hot-toast";
+import { Link } from "react-router-dom";
+import { ArrowLeft, Camera, Calendar, Mail, Shield, User } from "lucide-react";
+import { getAvatarSrc } from "../lib/avatar";
 
 const formatDate = (dateString) => {
   if (!dateString) return "N/A";
@@ -17,10 +20,13 @@ const formatDate = (dateString) => {
 const ProfilePage = () => {
   const { authUser, isUpdatingProfile, updateProfile } = useAuthStore();
   const [selectedImg, setSelectedImg] = useState(null);
+  const [fieldErrors, setFieldErrors] = useState({});
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
+    setFieldErrors({});
 
     const validationError = validateImageFile(file);
     if (validationError) {
@@ -39,18 +45,26 @@ const ProfilePage = () => {
     reader.onload = async () => {
       const base64Image = reader.result;
       setSelectedImg(base64Image);
-      const updated = await updateProfile({ profilePic: base64Image });
+      const result = await updateProfile({ profilePic: base64Image });
 
-      if (!updated) {
+      if (!result.success) {
         setSelectedImg(null);
+        setFieldErrors(result.fieldErrors);
       }
     };
   };
 
   return (
-    <main className="min-h-screen bg-base-200 pt-24 pb-12 px-4">
-      <div className="max-w-2xl mx-auto">
-        <div className="bg-base-100 rounded-2xl border border-base-300 overflow-hidden shadow-sm">
+    <main id="main-content" className="min-h-screen bg-base-200 px-4 pb-12 pt-24">
+      <div className="mx-auto max-w-2xl">
+        <Link
+          to="/"
+          className="mb-4 inline-flex items-center gap-2 text-sm text-base-content/70 transition-colors hover:text-base-content"
+        >
+          <ArrowLeft className="size-4" />
+          Back to chat
+        </Link>
+        <div className="overflow-hidden rounded-2xl border border-base-300 bg-base-100 shadow-sm">
           <div className="p-6 md:p-8 space-y-6 bg-base-100">
             <div className="flex flex-col items-center gap-2 mb-2">
               <div className="flex size-12 items-center justify-center rounded-xl bg-primary/10">
@@ -65,13 +79,21 @@ const ProfilePage = () => {
               <div className="flex flex-col items-center gap-4">
                 <div className="relative">
                   <img
-                    src={selectedImg || authUser?.profilePic || "/avatar.png"}
-                    alt="Profile"
+                    src={getAvatarSrc(selectedImg || authUser?.profilePic)}
+                    alt={authUser?.fullName || "User"}
                     className="size-36 rounded-full object-cover border-2 border-base-300 shadow-sm"
                   />
+                  {isUpdatingProfile && (
+                    <div
+                      className="absolute inset-0 flex items-center justify-center rounded-full bg-base-100/60"
+                      aria-hidden="true"
+                    >
+                      <span className="loading loading-spinner loading-lg text-primary" />
+                    </div>
+                  )}
                   <label
                     htmlFor="avatar-upload"
-                    aria-label="Upload profile picture"
+                    aria-label="Change profile photo"
                     className={`
                       absolute bottom-0 right-0
                       bg-primary hover:bg-primary-focus
@@ -79,7 +101,7 @@ const ProfilePage = () => {
                       transition-all duration-200 shadow-md
                       ${
                         isUpdatingProfile
-                          ? "animate-pulse pointer-events-none opacity-70"
+                          ? "pointer-events-none opacity-70"
                           : "hover:scale-105 active:scale-95"
                       }
                     `}
@@ -100,6 +122,10 @@ const ProfilePage = () => {
                     ? "Updating your photo..."
                     : "Tap the camera icon to update your profile picture"}
                 </p>
+                <FormFieldError
+                  id="profile-pic-error"
+                  message={fieldErrors.profilePic}
+                />
               </div>
             </section>
 

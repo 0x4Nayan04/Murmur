@@ -1,4 +1,4 @@
-import { X } from "lucide-react";
+import { X, ChevronLeft } from "lucide-react";
 import { useAuthStore } from "../store/useAuthStore";
 import { useChatStore } from "../store/useChatStore";
 import UserAvatar from "./UserAvatar";
@@ -34,10 +34,11 @@ const ChatHeader = () => {
           <button
             type="button"
             onClick={() => setSelectedUser(null)}
-            className="btn btn-sm btn-circle btn-ghost transition-colors duration-200 hover:bg-base-200"
+            className="icon-btn-focus btn btn-sm btn-circle btn-ghost transition-colors duration-200 hover:bg-base-200 lg:btn-circle"
             aria-label="Close conversation"
           >
-            <X size={20} />
+            <ChevronLeft size={20} className="lg:hidden" />
+            <X size={20} className="hidden lg:block" />
           </button>
         </div>
       </div>

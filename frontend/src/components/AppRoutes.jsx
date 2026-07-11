@@ -1,10 +1,11 @@
+import { lazy, Suspense } from "react";
 import { Loader } from "lucide-react";
 import { Navigate, Route, Routes } from "react-router-dom";
 
-import HomePage from "../pages/HomePage";
-import LoginPage from "../pages/LoginPage";
-import ProfilePage from "../pages/ProfilePage";
-import SignUpPage from "../pages/SignUpPage";
+const HomePage = lazy(() => import("../pages/HomePage"));
+const LoginPage = lazy(() => import("../pages/LoginPage"));
+const ProfilePage = lazy(() => import("../pages/ProfilePage"));
+const SignUpPage = lazy(() => import("../pages/SignUpPage"));
 
 export const AuthLoadingScreen = () => (
   <div
@@ -18,26 +19,28 @@ export const AuthLoadingScreen = () => (
 );
 
 export const AppRoutes = ({ authUser }) => (
-  <Routes>
-    <Route
-      path="/"
-      element={authUser ? <HomePage /> : <Navigate to="/login" replace />}
-    />
-    <Route
-      path="/signup"
-      element={!authUser ? <SignUpPage /> : <Navigate to="/" replace />}
-    />
-    <Route
-      path="/login"
-      element={!authUser ? <LoginPage /> : <Navigate to="/" replace />}
-    />
-    <Route
-      path="/profile"
-      element={authUser ? <ProfilePage /> : <Navigate to="/login" replace />}
-    />
-    <Route
-      path="*"
-      element={<Navigate to={authUser ? "/" : "/login"} replace />}
-    />
-  </Routes>
+  <Suspense fallback={<AuthLoadingScreen />}>
+    <Routes>
+      <Route
+        path="/"
+        element={authUser ? <HomePage /> : <Navigate to="/login" replace />}
+      />
+      <Route
+        path="/signup"
+        element={!authUser ? <SignUpPage /> : <Navigate to="/" replace />}
+      />
+      <Route
+        path="/login"
+        element={!authUser ? <LoginPage /> : <Navigate to="/" replace />}
+      />
+      <Route
+        path="/profile"
+        element={authUser ? <ProfilePage /> : <Navigate to="/login" replace />}
+      />
+      <Route
+        path="*"
+        element={<Navigate to={authUser ? "/" : "/login"} replace />}
+      />
+    </Routes>
+  </Suspense>
 );

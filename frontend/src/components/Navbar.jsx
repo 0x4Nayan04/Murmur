@@ -1,11 +1,14 @@
 import { useState, useRef, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useAuthStore } from "../store/useAuthStore";
 import { LogOut, MessageSquare, User, ChevronDown } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
+import { getAvatarSrc } from "../lib/avatar";
 
 const Navbar = () => {
   const { logout, authUser } = useAuthStore();
+  const location = useLocation();
+  const isProfileActive = location.pathname === "/profile";
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
 
@@ -55,7 +58,7 @@ const Navbar = () => {
                 <button
                   type="button"
                   onClick={() => setMenuOpen((o) => !o)}
-                  className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors duration-200 hover:bg-base-200 sm:gap-3 sm:px-3 sm:py-2"
+                  className="icon-btn-focus flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors duration-200 hover:bg-base-200 sm:gap-3 sm:px-3 sm:py-2"
                   aria-expanded={menuOpen}
                   aria-haspopup="true"
                   aria-controls="account-menu"
@@ -63,7 +66,7 @@ const Navbar = () => {
                 >
                   <div className="size-8 overflow-hidden rounded-full border-2 border-primary/20">
                     <img
-                      src={authUser.profilePic || "/avatar.png"}
+                      src={getAvatarSrc(authUser.profilePic)}
                       alt={authUser.fullName}
                       className="size-full object-cover"
                     />
@@ -79,18 +82,25 @@ const Navbar = () => {
                 {menuOpen && (
                   <div
                     id="account-menu"
+                    role="menu"
                     className="absolute right-0 top-full z-50 mt-2 flex w-48 flex-col overflow-hidden rounded-xl border border-base-300 bg-base-100 shadow-lg"
                   >
                     <Link
                       to="/profile"
+                      role="menuitem"
                       onClick={() => setMenuOpen(false)}
-                      className="flex w-full items-center gap-2 px-4 py-2.5 text-sm transition-colors duration-200 hover:bg-base-200"
+                      className={`flex w-full items-center gap-2 px-4 py-2.5 text-sm transition-colors duration-200 ${
+                        isProfileActive
+                          ? "bg-primary/10 font-medium text-primary"
+                          : "hover:bg-base-200"
+                      }`}
                     >
                       <User className="size-4 text-primary" />
                       <span>My Profile</span>
                     </Link>
                     <button
                       type="button"
+                      role="menuitem"
                       onClick={() => {
                         setMenuOpen(false);
                         logout();

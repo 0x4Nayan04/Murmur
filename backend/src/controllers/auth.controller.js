@@ -2,6 +2,7 @@ import { generateToken, clearAuthCookie } from "../lib/utils.js";
 import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import cloudinary from "../lib/cloudinary.js";
+import { isBase64Image, assertBase64ImageSize } from "../lib/imageValidation.js";
 
 const toPublicUser = (user) => ({
   _id: user._id,
@@ -14,19 +15,9 @@ const toPublicUser = (user) => ({
 export const signup = async (req, res) => {
   const { fullName, email, password } = req.body;
   try {
-    if (!fullName || !email || !password) {
-      return res.status(400).json({ message: "All fields are required" });
-    }
-
-    if (password.length < 6) {
-      return res
-        .status(400)
-        .json({ message: "Password must be at least 6 characters" });
-    }
-
     const user = await User.findOne({ email });
 
-    if (user) return res.status(400).json({ message: "Email already exists" });
+    if (user) return res.status(400).json({ message: "Invalid credentials" });
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
@@ -37,15 +28,10 @@ export const signup = async (req, res) => {
       password: hashedPassword,
     });
 
-    if (newUser) {
-      // generate jwt token here
-      await newUser.save();
-      generateToken(newUser._id, res);
+    await newUser.save();
+    generateToken(newUser._id, res);
 
-      res.status(201).json(toPublicUser(newUser));
-    } else {
-      res.status(400).json({ message: "Invalid user data" });
-    }
+    res.status(201).json(toPublicUser(newUser));
   } catch (error) {
     console.log("Error in signup controller", error.message);
     res.status(500).json({ message: "Internal Server Error" });
@@ -92,6 +78,18 @@ export const updateProfile = async (req, res) => {
 
     if (!profilePic) {
       return res.status(400).json({ message: "Profile pic is required" });
+    }
+
+    if (!isBase64Image(profilePic)) {
+      return res.status(400).json({
+        message: "Profile picture must be a valid base64 image",
+      });
+    }
+
+    try {
+      assertBase64ImageSize(profilePic);
+    } catch (error) {
+      return res.status(400).json({ message: error.message });
     }
 
     const uploadResponse = await cloudinary.uploader.upload(profilePic);

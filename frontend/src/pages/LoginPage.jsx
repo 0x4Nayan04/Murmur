@@ -2,27 +2,56 @@ import { useState } from "react";
 import { useAuthStore } from "../store/useAuthStore";
 import AuthImagePattern from "../components/AuthImagePattern";
 import ThemeToggle from "../components/ThemeToggle";
+import FormFieldError from "../components/ui/FormFieldError";
 import { Link } from "react-router-dom";
 import { Eye, EyeOff, Loader2, Lock, Mail, MessageSquare } from "lucide-react";
 
 const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState({});
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
   const { login, isLoggingIn } = useAuthStore();
 
+  const updateField = (field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    if (fieldErrors[field]) {
+      setFieldErrors((prev) => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await login({
-      email: formData.email.trim().toLowerCase(),
-      password: formData.password,
-    });
+    setFieldErrors({});
+
+    const email = formData.email.trim().toLowerCase();
+    const password = formData.password;
+
+    const errors = {};
+    if (!email) errors.email = "Email is required";
+    else if (!/\S+@\S+\.\S+/.test(email))
+      errors.email = "Invalid email format";
+    if (!password) errors.password = "Password is required";
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      return;
+    }
+
+    const result = await login({ email, password });
+    if (!result.success) {
+      setFieldErrors(result.fieldErrors);
+    }
   };
 
   return (
-    <main className="relative h-screen grid lg:grid-cols-2">
+    <main id="main-content" className="relative grid h-screen lg:grid-cols-2">
       <div className="absolute top-4 right-4 z-10 sm:top-6 sm:right-6">
         <ThemeToggle />
       </div>
@@ -33,10 +62,10 @@ const LoginPage = () => {
           <div className="text-center mb-8">
             <div className="flex flex-col items-center gap-2 group">
               <div
-                className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20
+                className="size-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20
               transition-colors"
               >
-                <MessageSquare className="w-6 h-6 text-primary" />
+                <MessageSquare className="size-6 text-primary" />
               </div>
               <h1 className="text-2xl font-bold mt-2">Welcome Back!</h1>
               <p className="text-base-content/60">
@@ -46,29 +75,34 @@ const LoginPage = () => {
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6" noValidate>
             <div className="form-control">
               <label className="label" htmlFor="login-email">
                 <span className="label-text font-medium">Email Address</span>
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-base-content/40" />
+                  <Mail className="size-5 text-base-content/40" />
                 </div>
                 <input
                   id="login-email"
                   type="email"
                   name="email"
                   autoComplete="email"
-                  className="input input-bordered w-full pl-10 bg-base-200 text-base-content focus:border-primary transition-colors"
+                  className={`input input-bordered w-full pl-10 bg-base-200 text-base-content focus:border-primary transition-colors ${
+                    fieldErrors.email ? "input-error" : ""
+                  }`}
                   placeholder="Your registered email"
                   value={formData.email}
-                  onChange={(e) =>
-                    setFormData({ ...formData, email: e.target.value })
+                  onChange={(e) => updateField("email", e.target.value)}
+                  aria-invalid={Boolean(fieldErrors.email)}
+                  aria-describedby={
+                    fieldErrors.email ? "login-email-error" : undefined
                   }
                   required
                 />
               </div>
+              <FormFieldError id="login-email-error" message={fieldErrors.email} />
             </div>
 
             <div className="form-control">
@@ -77,18 +111,22 @@ const LoginPage = () => {
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-base-content/40" />
+                  <Lock className="size-5 text-base-content/40" />
                 </div>
                 <input
                   id="login-password"
                   type={showPassword ? "text" : "password"}
                   name="password"
                   autoComplete="current-password"
-                  className="input input-bordered w-full pl-10 bg-base-200 text-base-content focus:border-primary transition-colors"
+                  className={`input input-bordered w-full pl-10 bg-base-200 text-base-content focus:border-primary transition-colors ${
+                    fieldErrors.password ? "input-error" : ""
+                  }`}
                   placeholder="Your secure password"
                   value={formData.password}
-                  onChange={(e) =>
-                    setFormData({ ...formData, password: e.target.value })
+                  onChange={(e) => updateField("password", e.target.value)}
+                  aria-invalid={Boolean(fieldErrors.password)}
+                  aria-describedby={
+                    fieldErrors.password ? "login-password-error" : undefined
                   }
                   required
                 />
@@ -100,12 +138,16 @@ const LoginPage = () => {
                   aria-pressed={showPassword}
                 >
                   {showPassword ? (
-                    <EyeOff className="h-5 w-5 text-base-content/40" />
+                    <EyeOff className="size-5 text-base-content/40" />
                   ) : (
-                    <Eye className="h-5 w-5 text-base-content/40" />
+                    <Eye className="size-5 text-base-content/40" />
                   )}
                 </button>
               </div>
+              <FormFieldError
+                id="login-password-error"
+                message={fieldErrors.password}
+              />
             </div>
 
             <button
@@ -115,7 +157,7 @@ const LoginPage = () => {
             >
               {isLoggingIn ? (
                 <>
-                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <Loader2 className="size-5 animate-spin" />
                   Signing in...
                 </>
               ) : (

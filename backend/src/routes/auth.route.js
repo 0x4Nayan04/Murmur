@@ -13,12 +13,13 @@ import {
   loginSchema,
   updateProfileSchema,
 } from "../lib/validation.js";
+import { authRateLimiter } from "../middleware/rateLimit.middleware.js";
 
 const router = express.Router();
 
-router.post("/signup", validate(signupSchema), signup);
-router.post("/login", validate(loginSchema), login);
-router.post("/logout", logout);
+router.post("/signup", authRateLimiter, validate(signupSchema), signup);
+router.post("/login", authRateLimiter, validate(loginSchema), login);
+router.post("/logout", protectRoute, logout);
 
 router.put(
   "/update-profile",

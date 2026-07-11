@@ -24,21 +24,26 @@ export const useChatStore = create((set, get) => ({
   users: [],
   selectedUser: null,
   isUsersLoading: false,
+  usersError: null,
   isMessagesLoading: false,
+  messagesError: null,
   isOlderMessagesLoading: false,
   messagePagination: { currentPage: 1, hasMore: false },
   typingUsers: {},
   unreadCounts: {},
+  readByPartners: {},
   isSubscribedToMessages: false,
 
   getUsers: async () => {
-    set({ isUsersLoading: true });
+    set({ isUsersLoading: true, usersError: null });
     try {
       const res = await axiosInstance.get("/messages/users");
       set({ users: res.data });
       get().fetchUnreadCounts();
     } catch (error) {
-      toast.error(getApiErrorMessage(error, "Failed to load users"));
+      const message = getApiErrorMessage(error, "Failed to load users");
+      set({ usersError: message });
+      toast.error(message);
     } finally {
       set({ isUsersLoading: false });
     }
@@ -67,7 +72,7 @@ export const useChatStore = create((set, get) => ({
 
   getMessages: async (userId) => {
     const requestId = ++messagesRequestId;
-    set({ isMessagesLoading: true });
+    set({ isMessagesLoading: true, messagesError: null });
     try {
       const res = await axiosInstance.get(`/messages/${userId}`);
       if (
@@ -87,8 +92,9 @@ export const useChatStore = create((set, get) => ({
       void markMessagesRead(axiosInstance, userId);
     } catch (error) {
       if (requestId === messagesRequestId) {
-        toast.error(getApiErrorMessage(error, "Failed to load messages"));
-        set({ messages: [] });
+        const message = getApiErrorMessage(error, "Failed to load messages");
+        set({ messages: [], messagesError: message });
+        toast.error(message);
       }
     } finally {
       if (requestId === messagesRequestId) {
@@ -204,6 +210,47 @@ export const useChatStore = create((set, get) => ({
     socket?.emit("stopTyping", { receiverId });
   },
 
+  editMessage: async (messageId, text) => {
+    const trimmed = text?.trim();
+    if (!trimmed) {
+      toast.error("Message cannot be empty");
+      return false;
+    }
+
+    try {
+      const res = await axiosInstance.put(`/messages/edit/${messageId}`, {
+        text: trimmed,
+      });
+      const editedMessage = res.data?.data || res.data;
+      set((state) => ({
+        messages: state.messages.map((message) =>
+          message._id === messageId ? editedMessage : message,
+        ),
+      }));
+      return true;
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Failed to edit message"));
+      return false;
+    }
+  },
+
+  deleteMessage: async (messageId) => {
+    try {
+      await axiosInstance.delete(`/messages/${messageId}`);
+      set((state) => ({
+        messages: state.messages.map((message) =>
+          message._id === messageId
+            ? { ...message, text: null, image: null, isDeleted: true }
+            : message,
+        ),
+      }));
+      return true;
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Failed to delete message"));
+      return false;
+    }
+  },
+
   subscribeToMessages: () => {
     const socket = useAuthStore.getState().socket;
     if (!socket || get().isSubscribedToMessages) return;
@@ -231,6 +278,7 @@ export const useChatStore = create((set, get) => ({
       typingUsers: {},
       isMessagesLoading: false,
       isOlderMessagesLoading: false,
+      messagesError: null,
       messagePagination: { currentPage: 1, hasMore: false },
     });
   },
@@ -243,8 +291,10 @@ export const useChatStore = create((set, get) => ({
       users: [],
       selectedUser: null,
       isUsersLoading: false,
+      usersError: null,
       isMessagesLoading: false,
       isOlderMessagesLoading: false,
+      messagesError: null,
       messagePagination: { currentPage: 1, hasMore: false },
       typingUsers: {},
       unreadCounts: {},

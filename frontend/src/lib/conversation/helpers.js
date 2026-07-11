@@ -1,4 +1,5 @@
 import { normalizeId } from "../utils.js";
+import { useAuthStore } from "../../store/useAuthStore.js";
 
 export const createOptimisticMessage = (authUser, targetUserId, messageData) => ({
   _id: `temp-${Date.now()}-${Math.random()}`,
@@ -117,12 +118,21 @@ export const registerChatSocketHandlers = (socket, get, set, axiosInstance) => {
 
   socket.on("messagesRead", ({ readBy }) => {
     const readById = normalizeId(readBy);
+    const authUserId = normalizeId(useAuthStore.getState().authUser?._id);
+    if (!authUserId || !readById) return;
+
     set((state) => ({
-      messages: state.messages.map((message) =>
-        normalizeId(message.receiverId) === readById
-          ? { ...message, isRead: true }
-          : message,
-      ),
+      readByPartners: {
+        ...state.readByPartners,
+        [readById]: true,
+      },
+      messages: state.messages.map((message) => {
+        const isOwnSentMessage =
+          normalizeId(message.senderId) === authUserId &&
+          normalizeId(message.receiverId) === readById;
+
+        return isOwnSentMessage ? { ...message, isRead: true } : message;
+      }),
     }));
   });
 
@@ -172,11 +182,18 @@ export const commitSentMessage = (
   serverMessage,
 ) => {
   if (get().selectedUser?._id !== targetUserId) return;
+
+  const partnerId = normalizeId(serverMessage.receiverId);
+  const partnerAlreadyRead = Boolean(get().readByPartners?.[partnerId]);
+  const committedMessage = partnerAlreadyRead
+    ? { ...serverMessage, isRead: true }
+    : serverMessage;
+
   set({
     messages: replaceOptimisticMessage(
       get().messages,
       optimisticId,
-      serverMessage,
+      committedMessage,
     ),
   });
 };
