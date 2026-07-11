@@ -3,7 +3,7 @@
 > A sophisticated real-time messaging platform built with the MERN stack and
 > Socket.IO for seamless communication experiences.
 
-**Live:** [murmur.nayan04.me](https://murmur.nayan04.me) | **GitHub:**
+**Live:** [mumur.nayanswarnkar.com](https://mumur.nayanswarnkar.com/) | **GitHub:**
 [0x4Nayan04/Murmur](https://github.com/0x4Nayan04/Murmur/tree/main)
 
 [![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](https://opensource.org/licenses/ISC)
@@ -28,9 +28,10 @@
 - **Optimistic UI updates** for instant feedback and perceived performance
 - **Responsive design** with TailwindCSS and DaisyUI components
 - **Search functionality** with debounced input for finding contacts
-- **Form state management** with automatic cleanup on user switches
+- **Form state management** with `useReducer` and automatic cleanup on user switches
 - **Error handling** with user-friendly toast notifications
-- **Dark/Light mode** support via DaisyUI themes
+- **Dark/Light mode** support via DaisyUI themes and `useThemeStore`
+- **Accessibility** with explicit button types, screen-reader labels, and semantic markup
 
 ### Security & Performance
 
@@ -68,6 +69,7 @@
 
 - **ESLint** with React and Node.js configurations
 - **Prettier** for consistent code formatting
+- **React Doctor** for React-specific performance, accessibility, and correctness checks
 - **Nodemon** for backend development hot-reloading
 - **Concurrently** for running multiple development servers
 
@@ -119,6 +121,7 @@
 | `npm run start`        | Start backend in production mode                    |
 | `npm run format`       | Format code with Prettier                           |
 | `npm run format:check` | Check code formatting without changes               |
+| `npx react-doctor@latest --verbose` | Audit frontend React patterns (run from `frontend/`) |
 
 #### Backend Scripts
 
@@ -217,8 +220,6 @@ murmur/
 │   │   │   └── skeletons/
 │   │   │       ├── MessageSkeleton.jsx
 │   │   │       └── SidebarSkeleton.jsx
-│   │   ├── constants/
-│   │   │   └── index.js
 │   │   ├── pages/
 │   │   │   ├── HomePage.jsx
 │   │   │   ├── LoginPage.jsx
@@ -329,11 +330,14 @@ socket.on("messageDeleted", ({ messageId }) => {
 ### User Experience Features
 
 - **Smart typing indicators** with 2-second auto-timeout to prevent stuck states
+- **Ease-out motion** for typing dots and empty-state icons (`animate-ease-out-dot`, `animate-ease-out-float` in `index.css`) instead of bouncy defaults
 - **Online presence system** with real-time status updates and connection
   handling
-- **Debounced search** (300ms delay) for smooth contact filtering
+- **Debounced search** (300ms delay) for smooth contact filtering with single-pass
+  filtering and `Set`-based online lookups in the sidebar
 - **Responsive design** optimized for desktop, tablet, and mobile devices
-- **Form state management** with automatic cleanup when switching conversations
+- **Composer state** managed with `useReducer` in `MessageInput` — one dispatch
+  resets text, preview, and upload state when switching conversations
 - **Toast notifications** for user feedback (success, error, loading states)
 
 ### Security & Validation
@@ -344,6 +348,20 @@ socket.on("messageDeleted", ({ messageId }) => {
 - **XSS protection** through proper data sanitization
 - **Password security** with bcrypt hashing (10 salt rounds)
 
+### Code Quality
+
+Run React Doctor from the `frontend/` directory to catch React-specific issues
+(performance, accessibility, state patterns):
+
+```bash
+cd frontend
+npx react-doctor@latest --verbose
+```
+
+The frontend currently scores **100/100** on React Doctor. Checks include
+explicit button `type` attributes, avoiding unnecessary re-renders, semantic
+labels, and efficient list filtering.
+
 ## Production Deployment
 
 ### Pre-deployment Checklist
@@ -352,6 +370,7 @@ socket.on("messageDeleted", ({ messageId }) => {
 - [ ] Cloudinary credentials set up
 - [ ] Environment variables configured for production
 - [ ] Frontend build tested locally (`npm run build`)
+- [ ] React Doctor passes with no warnings (`npx react-doctor@latest --verbose` in `frontend/`)
 - [ ] Backend health check endpoint accessible
 
 ### Recommended Hosting Platforms
