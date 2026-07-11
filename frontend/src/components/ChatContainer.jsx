@@ -6,7 +6,7 @@ import ChatHeader from "./ChatHeader";
 import MessageInput from "./MessageInput";
 import MessageSkeleton from "./skeletons/MessageSkeleton";
 import { useAuthStore } from "../store/useAuthStore";
-import { formatMessageTime } from "../lib/utils";
+import { formatMessageTime, normalizeId } from "../lib/utils";
 
 const ChatContainer = () => {
   const {
@@ -14,12 +14,15 @@ const ChatContainer = () => {
     getMessages,
     isMessagesLoading,
     selectedUser,
-    subscribeToMessages,
-    unsubscribeFromMessages,
+    loadOlderMessages,
+    isOlderMessagesLoading,
+    messagePagination,
     typingUsers,
   } = useChatStore();
   const { authUser } = useAuthStore();
   const messageEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
+  const isLoadingOlderRef = useRef(false);
 
   // Check if selected user is typing
   const isTyping = selectedUser && typingUsers[selectedUser._id];
@@ -27,30 +30,48 @@ const ChatContainer = () => {
   useEffect(() => {
     if (selectedUser?._id) {
       getMessages(selectedUser._id);
-      subscribeToMessages();
     }
-    return () => unsubscribeFromMessages();
-  }, [
-    selectedUser?._id,
-    getMessages,
-    subscribeToMessages,
-    unsubscribeFromMessages,
-  ]);
+  }, [selectedUser?._id, getMessages]);
 
   useEffect(() => {
-    if (messageEndRef.current && messages) {
+    if (
+      messageEndRef.current &&
+      messages &&
+      !isLoadingOlderRef.current
+    ) {
       messageEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages, isTyping]);
 
+  const handleLoadOlderMessages = async () => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    const previousScrollHeight = container.scrollHeight;
+    const previousScrollTop = container.scrollTop;
+    isLoadingOlderRef.current = true;
+    await loadOlderMessages();
+
+    requestAnimationFrame(() => {
+      container.scrollTop =
+        previousScrollTop + (container.scrollHeight - previousScrollHeight);
+      isLoadingOlderRef.current = false;
+    });
+  };
+
   // Group messages by date - ensure messages is an array
   const groupedMessages = Array.isArray(messages)
     ? messages.reduce((groups, message) => {
-        const date = new Date(message.createdAt).toLocaleDateString();
-        if (!groups[date]) {
-          groups[date] = [];
+        const messageDate = new Date(message.createdAt);
+        const dateKey = [
+          messageDate.getFullYear(),
+          String(messageDate.getMonth() + 1).padStart(2, "0"),
+          String(messageDate.getDate()).padStart(2, "0"),
+        ].join("-");
+        if (!groups[dateKey]) {
+          groups[dateKey] = [];
         }
-        groups[date].push(message);
+        groups[dateKey].push(message);
         return groups;
       }, {})
     : {};
@@ -69,11 +90,34 @@ const ChatContainer = () => {
     <div className="flex-1 flex flex-col overflow-hidden">
       <ChatHeader />
 
-      <div className="flex-1 overflow-y-auto p-2 md:p-4 space-y-4 bg-gradient-to-b from-base-100/20 to-base-100/40">
-        {Object.entries(groupedMessages).map(([date, dateMessages]) => (
-          <div key={date} className="space-y-3">
+      <div
+        ref={messagesContainerRef}
+        className="flex-1 overflow-y-auto p-2 md:p-4 space-y-4 bg-gradient-to-b from-base-100/20 to-base-100/40"
+      >
+        {messagePagination.hasMore && (
+          <div className="flex justify-center">
+            <button
+              type="button"
+              className="btn btn-ghost btn-xs"
+              onClick={handleLoadOlderMessages}
+              disabled={isOlderMessagesLoading}
+            >
+              {isOlderMessagesLoading ? (
+                <>
+                  <span className="loading loading-spinner loading-xs" />
+                  Loading…
+                </>
+              ) : (
+                "Load older messages"
+              )}
+            </button>
+          </div>
+        )}
+
+        {Object.entries(groupedMessages).map(([dateKey, dateMessages]) => (
+          <div key={dateKey} className="space-y-3">
             <div className="divider text-xs text-base-content/50 my-2">
-              {new Date(date).toLocaleDateString(undefined, {
+              {new Date(`${dateKey}T00:00:00`).toLocaleDateString(undefined, {
                 weekday: "long",
                 year: "numeric",
                 month: "short",
@@ -82,7 +126,8 @@ const ChatContainer = () => {
             </div>
 
             {dateMessages.map((message, index) => {
-              const isOwnMessage = message.senderId === authUser._id;
+              const isOwnMessage =
+                normalizeId(message.senderId) === normalizeId(authUser._id);
               const isFirstInGroup =
                 index === 0 ||
                 dateMessages[index - 1].senderId !== message.senderId;
@@ -96,11 +141,13 @@ const ChatContainer = () => {
 
               const metaRow = (
                 <div className="text-right text-[10px] opacity-70 flex gap-1 items-center justify-end mt-0.5">
-                  <time>{formatMessageTime(message.createdAt)}</time>
+                  <time dateTime={message.createdAt}>
+                    {formatMessageTime(message.createdAt)}
+                  </time>
                   {isOwnMessage &&
                     (message.isPending ? (
                       <Loader size={12} className="animate-spin" />
-                    ) : message.read ? (
+                    ) : message.isRead ? (
                       <CheckCheck size={12} />
                     ) : (
                       <Check size={12} />
@@ -127,6 +174,11 @@ const ChatContainer = () => {
                   )}
                   {message.text && (
                     <p className="break-words text-sm">{message.text}</p>
+                  )}
+                  {message.isDeleted && (
+                    <p className="break-words text-sm italic opacity-70">
+                      Message deleted
+                    </p>
                   )}
                   {metaRow}
                 </>
@@ -192,7 +244,11 @@ const ChatContainer = () => {
 
         {/* Typing indicator */}
         {isTyping && (
-          <div className="flex justify-start mt-2">
+          <div
+            className="flex justify-start mt-2"
+            role="status"
+            aria-label={`${selectedUser.fullName} is typing`}
+          >
             <div className="flex items-end gap-2">
               <div className="flex-shrink-0 pb-0.5">
                 <div className="size-8 rounded-full overflow-hidden border border-base-300">

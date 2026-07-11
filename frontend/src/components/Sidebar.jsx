@@ -3,10 +3,19 @@ import { useChatStore } from "../store/useChatStore";
 import { useAuthStore } from "../store/useAuthStore";
 import SidebarSkeleton from "./skeletons/SidebarSkeleton";
 import { Users, Search, Circle, MessageCircle, X } from "lucide-react";
+import { normalizeId } from "../lib/utils";
 
-const Sidebar = () => {
-  const { getUsers, users, selectedUser, setSelectedUser, isUsersLoading } =
-    useChatStore();
+const formatUnreadCount = (count) => (count > 99 ? "99+" : String(count));
+
+const Sidebar = ({ className = "" }) => {
+  const {
+    getUsers,
+    users,
+    selectedUser,
+    setSelectedUser,
+    isUsersLoading,
+    unreadCounts,
+  } = useChatStore();
   const { onlineUsers, authUser } = useAuthStore();
   const [showOnlineOnly, setShowOnlineOnly] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -35,22 +44,24 @@ const Sidebar = () => {
   if (isUsersLoading) return <SidebarSkeleton />;
 
   return (
-    <aside className="h-full w-20 lg:w-80 shrink-0 border-r border-base-300 flex flex-col overflow-hidden       transition-all duration-300 bg-base-100/50 backdrop-blur-sm">
+    <aside
+      className={`h-full w-full lg:w-80 shrink-0 border-r border-base-300 flex flex-col overflow-hidden transition-all duration-300 bg-base-100/50 backdrop-blur-sm ${className}`}
+    >
       <div className="border-b border-base-300 w-full p-4 lg:p-5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="bg-primary/10 p-2 rounded-full">
               <MessageCircle className="size-5 text-primary" />
             </div>
-            <h2 className="font-semibold text-lg hidden lg:block">
+            <h2 className="font-semibold text-lg">
               Connections
             </h2>
           </div>
 
-          <div className="hidden lg:block">
+          <div>
             <span className="badge badge-primary">
               {onlineUsers.includes(authUser?._id)
-                ? onlineUsers.length - 1
+                ? Math.max(onlineUsers.length - 1, 0)
                 : onlineUsers.length}{" "}
               active now
             </span>
@@ -58,34 +69,37 @@ const Sidebar = () => {
         </div>
 
         <div className="mt-4 space-y-2">
-          <div className="relative hidden lg:block">
+          <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-zinc-400" />
             <input
               type="text"
               placeholder="Find people..."
+              aria-label="Find people"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="input input-sm input-bordered w-full pl-10"
             />
             {searchQuery && (
               <button
+                type="button"
                 onClick={() => setSearchQuery("")}
                 className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1 transition-colors duration-200 hover:bg-base-200"
+                aria-label="Clear search"
               >
                 <X className="size-3.5" />
               </button>
             )}
           </div>
 
-          <div className="flex items-center justify-center lg:justify-start gap-2">
-            <label className="cursor-pointer flex items-center gap-2 rounded-full px-2 py-1 transition-colors duration-200 hover:bg-base-200 lg:bg-base-200 lg:hover:bg-base-300">
+          <div className="flex items-center justify-start gap-2">
+            <label className="cursor-pointer flex items-center gap-2 rounded-full px-2 py-1 transition-colors duration-200 bg-base-200 hover:bg-base-300">
               <input
                 type="checkbox"
                 checked={showOnlineOnly}
                 onChange={(e) => setShowOnlineOnly(e.target.checked)}
-                className="toggle toggle-xs lg:toggle-sm toggle-primary"
+                className="toggle toggle-sm toggle-primary"
               />
-              <span className="text-xs lg:text-sm hidden lg:inline">
+              <span className="text-sm">
                 Show active only
               </span>
             </label>
@@ -95,57 +109,62 @@ const Sidebar = () => {
 
       <div className="overflow-y-auto overflow-x-hidden w-full py-3 pr-2 flex-1 min-h-0 scrollbar-thin">
         {filteredUsers.length > 0 ? (
-          filteredUsers.map((user) => (
-            <button
-              key={user._id}
-              onClick={() => setSelectedUser(user)}
-              className={
-                selectedUser?._id === user._id
-                  ? "w-full p-2 lg:p-3 flex flex-col lg:flex-row lg:items-center gap-2 lg:gap-3 mb-1 mx-1 lg:mx-2 rounded-xl border bg-primary/10 border-primary/20 transition-colors duration-200 hover:bg-primary/15 hover:border-primary/25"
-                  : "w-full p-2 lg:p-3 flex flex-col lg:flex-row lg:items-center gap-2 lg:gap-3 mb-1 mx-1 lg:mx-2 rounded-xl border border-transparent transition-colors duration-200 hover:bg-base-200"
-              }
-            >
-              <div className="relative mx-auto lg:mx-0 shrink-0">
-                <img
-                  src={user.profilePic || "/avatar.png"}
-                  alt={user.fullName}
-                  className="size-11 lg:size-12 object-cover rounded-full shadow-sm"
-                />
-                {onlineUsers.includes(user._id) && (
-                  <div className="absolute -bottom-0.5 -right-0.5">
-                    <span className="relative size-3 bg-green-500 rounded-full ring-2 ring-base-100"></span>
-                  </div>
-                )}
-              </div>
-              <div className="lg:hidden flex flex-col items-center justify-center min-w-0 flex-1 py-0.5">
-                <span className="text-xs font-medium truncate w-full text-center">
-                  {user.fullName}
-                </span>
-                <span
-                  className={`text-[10px] mt-0.5 ${
-                    onlineUsers.includes(user._id)
-                      ? "text-green-600"
-                      : "text-zinc-400"
-                  }`}
-                >
-                  {onlineUsers.includes(user._id) ? "Online" : "Offline"}
-                </span>
-              </div>
-              <div className="hidden lg:block text-left min-w-0 flex-1">
-                <div className="font-medium truncate">{user.fullName}</div>
-                <div className="flex items-center gap-1 text-sm">
-                  {onlineUsers.includes(user._id) ? (
-                    <>
-                      <Circle className="size-2 fill-green-500 text-green-500" />
-                      <span className="text-green-600">Online</span>
-                    </>
-                  ) : (
-                    <span className="text-zinc-400">Offline</span>
+          filteredUsers.map((user) => {
+            const unread = unreadCounts[normalizeId(user._id)] || 0;
+            return (
+              <button
+                type="button"
+                key={user._id}
+                onClick={() => setSelectedUser(user)}
+                className={
+                  selectedUser?._id === user._id
+                    ? "w-[calc(100%_-_1rem)] p-3 flex flex-row items-center gap-3 mb-1 mx-2 rounded-xl border bg-primary/10 border-primary/20 transition-colors duration-200 hover:bg-primary/15 hover:border-primary/25"
+                    : "w-[calc(100%_-_1rem)] p-3 flex flex-row items-center gap-3 mb-1 mx-2 rounded-xl border border-transparent transition-colors duration-200 hover:bg-base-200"
+                }
+                aria-current={
+                  selectedUser?._id === user._id ? "true" : undefined
+                }
+                aria-label={
+                  unread > 0
+                    ? `${user.fullName}, ${unread} unread`
+                    : user.fullName
+                }
+              >
+                <div className="relative mx-0 shrink-0">
+                  <img
+                    src={user.profilePic || "/avatar.png"}
+                    alt=""
+                    className="size-12 object-cover rounded-full shadow-sm"
+                  />
+                  {onlineUsers.includes(user._id) && (
+                    <div className="absolute -bottom-0.5 -right-0.5">
+                      <span className="block size-3 bg-green-500 rounded-full ring-2 ring-base-100"></span>
+                    </div>
                   )}
                 </div>
-              </div>
-            </button>
-          ))
+                <div className="flex text-left min-w-0 flex-1 items-center gap-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="font-medium truncate">{user.fullName}</div>
+                    <div className="flex items-center gap-1 text-sm">
+                      {onlineUsers.includes(user._id) ? (
+                        <>
+                          <Circle className="size-2 fill-green-500 text-green-500" />
+                          <span className="text-green-600">Online</span>
+                        </>
+                      ) : (
+                        <span className="text-zinc-400">Offline</span>
+                      )}
+                    </div>
+                  </div>
+                  {unread > 0 && (
+                    <span className="badge badge-primary badge-sm shrink-0">
+                      {formatUnreadCount(unread)}
+                    </span>
+                  )}
+                </div>
+              </button>
+            );
+          })
         ) : (
           <div className="flex flex-col items-center justify-center h-40 text-zinc-500">
             <Users className="size-10 opacity-20 mb-2" />

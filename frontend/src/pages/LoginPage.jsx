@@ -14,11 +14,14 @@ const LoginPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    login(formData);
+    await login({
+      email: formData.email.trim().toLowerCase(),
+      password: formData.password,
+    });
   };
 
   return (
-    <div className="h-screen grid lg:grid-cols-2">
+    <main className="h-screen grid lg:grid-cols-2">
       {/* Left Side - Form */}
       <div className="flex flex-col justify-center items-center p-6 sm:p-12">
         <div className="w-full max-w-md space-y-8">
@@ -41,7 +44,7 @@ const LoginPage = () => {
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="form-control">
-              <label className="label">
+              <label className="label" htmlFor="login-email">
                 <span className="label-text font-medium">Email Address</span>
               </label>
               <div className="relative">
@@ -49,8 +52,11 @@ const LoginPage = () => {
                   <Mail className="h-5 w-5 text-base-content/40" />
                 </div>
                 <input
+                  id="login-email"
                   type="email"
-                  className="input input-bordered w-full pl-10 focus:border-primary transition-colors"
+                  name="email"
+                  autoComplete="email"
+                  className="input input-bordered w-full pl-10 bg-base-200 text-base-content focus:border-primary transition-colors"
                   placeholder="Your registered email"
                   value={formData.email}
                   onChange={(e) =>
@@ -62,22 +68,19 @@ const LoginPage = () => {
             </div>
 
             <div className="form-control">
-              <div className="flex justify-between items-center">
-                <label className="label">
-                  <span className="label-text font-medium">Password</span>
-                </label>
-                <Link
-                  to="/forgot-password"
-                  className="text-xs text-primary hover:underline"
-                ></Link>
-              </div>
+              <label className="label" htmlFor="login-password">
+                <span className="label-text font-medium">Password</span>
+              </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Lock className="h-5 w-5 text-base-content/40" />
                 </div>
                 <input
+                  id="login-password"
                   type={showPassword ? "text" : "password"}
-                  className="input input-bordered w-full pl-10 focus:border-primary transition-colors"
+                  name="password"
+                  autoComplete="current-password"
+                  className="input input-bordered w-full pl-10 bg-base-200 text-base-content focus:border-primary transition-colors"
                   placeholder="Your secure password"
                   value={formData.password}
                   onChange={(e) =>
@@ -89,6 +92,8 @@ const LoginPage = () => {
                   type="button"
                   className="absolute inset-y-0 right-0 pr-3 flex items-center"
                   onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-pressed={showPassword}
                 >
                   {showPassword ? (
                     <EyeOff className="h-5 w-5 text-base-content/40" />
@@ -136,7 +141,7 @@ const LoginPage = () => {
           "Sign in to access your conversations, connect with friends, and discover new connections."
         }
       />
-    </div>
+    </main>
   );
 };
 export default LoginPage;

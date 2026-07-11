@@ -1,9 +1,14 @@
 import axios from "axios";
+import { useAuthStore } from "../store/useAuthStore";
+import { useChatStore } from "../store/useChatStore";
 
-// Use environment variable for API URL, fallback to localhost for development
-const BASE_URL = import.meta.env.VITE_API_URL
-  ? `${import.meta.env.VITE_API_URL}/api`
-  : "http://localhost:5001/api";
+const API_ORIGIN =
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.DEV ? "http://localhost:5001" : window.location.origin);
+const NORMALIZED_API_ORIGIN = API_ORIGIN.replace(/\/+$/, "");
+const BASE_URL = NORMALIZED_API_ORIGIN.endsWith("/api")
+  ? NORMALIZED_API_ORIGIN
+  : `${NORMALIZED_API_ORIGIN}/api`;
 
 export const axiosInstance = axios.create({
   baseURL: BASE_URL,
@@ -33,7 +38,14 @@ axiosInstance.interceptors.response.use(
   (error) => {
     // Handle common error scenarios
     if (error.response?.status === 401) {
-      console.log("Unauthorized access - you may need to log in again");
+      const requestUrl = error.config?.url || "";
+      const isAuthCheck = requestUrl.includes("/auth/check");
+
+      if (!isAuthCheck && useAuthStore.getState().authUser) {
+        useAuthStore.setState({ authUser: null });
+        useAuthStore.getState().disconnectSocket();
+        useChatStore.getState().resetChat();
+      }
     } else if (error.response?.status === 500) {
       console.error("Server error - please try again later");
     } else if (!error.response) {

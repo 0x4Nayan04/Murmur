@@ -16,8 +16,16 @@ const ProfilePage = () => {
       return;
     }
 
-    if (!file.type.startsWith("image/")) {
-      toast.error("Please select an image file");
+    if (
+      ![
+        "image/jpeg",
+        "image/jpg",
+        "image/png",
+        "image/gif",
+        "image/webp",
+      ].includes(file.type)
+    ) {
+      toast.error("Only JPEG, PNG, GIF, and WebP images are allowed");
       return;
     }
 
@@ -30,12 +38,11 @@ const ProfilePage = () => {
     reader.readAsDataURL(file);
 
     reader.onload = async () => {
-      try {
-        const base64Image = reader.result;
-        setSelectedImg(base64Image);
-        await updateProfile({ profilePic: base64Image });
-      } catch {
-        toast.error("Failed to update profile picture");
+      const base64Image = reader.result;
+      setSelectedImg(base64Image);
+      const updated = await updateProfile({ profilePic: base64Image });
+
+      if (!updated) {
         setSelectedImg(null);
       }
     };
@@ -52,7 +59,7 @@ const ProfilePage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-base-200 pt-24 pb-12 px-4">
+    <main className="min-h-screen bg-base-200 pt-24 pb-12 px-4">
       <div className="max-w-2xl mx-auto">
         <div className="bg-base-100 rounded-2xl border border-base-300 overflow-hidden shadow-sm">
           <div className="p-6 md:p-8 space-y-6 bg-base-100">
@@ -75,6 +82,7 @@ const ProfilePage = () => {
                   />
                   <label
                     htmlFor="avatar-upload"
+                    aria-label="Upload profile picture"
                     className={`
                       absolute bottom-0 right-0
                       bg-primary hover:bg-primary-focus
@@ -165,7 +173,7 @@ const ProfilePage = () => {
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 };
 

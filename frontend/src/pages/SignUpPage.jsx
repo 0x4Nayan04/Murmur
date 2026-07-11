@@ -36,16 +36,22 @@ const SignUpPage = () => {
     return true;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const success = validateForm();
 
-    if (success === true) signup(formData);
+    if (success === true) {
+      await signup({
+        fullName: formData.fullName.trim(),
+        email: formData.email.trim().toLowerCase(),
+        password: formData.password,
+      });
+    }
   };
 
   return (
-    <div className="min-h-screen grid lg:grid-cols-2">
+    <main className="min-h-screen grid lg:grid-cols-2">
       {/* left side */}
       <div className="flex flex-col justify-center items-center p-6 sm:p-12">
         <div className="w-full max-w-md space-y-8">
@@ -67,7 +73,7 @@ const SignUpPage = () => {
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="form-control">
-              <label className="label">
+              <label className="label" htmlFor="signup-name">
                 <span className="label-text font-medium">Your Name</span>
               </label>
               <div className="relative">
@@ -75,19 +81,23 @@ const SignUpPage = () => {
                   <User className="size-5 text-base-content/40" />
                 </div>
                 <input
+                  id="signup-name"
                   type="text"
-                  className={`input input-bordered w-full pl-10`}
+                  name="name"
+                  autoComplete="name"
+                  className="input input-bordered w-full pl-10 bg-base-200 text-base-content"
                   placeholder="What should we call you?"
                   value={formData.fullName}
                   onChange={(e) =>
                     setFormData({ ...formData, fullName: e.target.value })
                   }
+                  required
                 />
               </div>
             </div>
 
             <div className="form-control">
-              <label className="label">
+              <label className="label" htmlFor="signup-email">
                 <span className="label-text font-medium">Email Address</span>
               </label>
               <div className="relative">
@@ -95,19 +105,23 @@ const SignUpPage = () => {
                   <Mail className="size-5 text-base-content/40" />
                 </div>
                 <input
+                  id="signup-email"
                   type="email"
-                  className={`input input-bordered w-full pl-10`}
+                  name="email"
+                  autoComplete="email"
+                  className="input input-bordered w-full pl-10 bg-base-200 text-base-content"
                   placeholder="Your email stays private"
                   value={formData.email}
                   onChange={(e) =>
                     setFormData({ ...formData, email: e.target.value })
                   }
+                  required
                 />
               </div>
             </div>
 
             <div className="form-control">
-              <label className="label">
+              <label className="label" htmlFor="signup-password">
                 <span className="label-text font-medium">Choose Password</span>
               </label>
               <div className="relative">
@@ -115,18 +129,25 @@ const SignUpPage = () => {
                   <Lock className="size-5 text-base-content/40" />
                 </div>
                 <input
+                  id="signup-password"
                   type={showPassword ? "text" : "password"}
-                  className={`input input-bordered w-full pl-10`}
+                  name="password"
+                  autoComplete="new-password"
+                  className="input input-bordered w-full pl-10 bg-base-200 text-base-content"
                   placeholder="At least 6 characters"
                   value={formData.password}
                   onChange={(e) =>
                     setFormData({ ...formData, password: e.target.value })
                   }
+                  minLength={6}
+                  required
                 />
                 <button
                   type="button"
                   className="absolute inset-y-0 right-0 pr-3 flex items-center"
                   onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-pressed={showPassword}
                 >
                   {showPassword ? (
                     <EyeOff className="size-5 text-base-content/40" />
@@ -170,7 +191,7 @@ const SignUpPage = () => {
         title="Join the conversation"
         subtitle="Connect with friends, share ideas, and build meaningful relationships in our vibrant community."
       />
-    </div>
+    </main>
   );
 };
 export default SignUpPage;

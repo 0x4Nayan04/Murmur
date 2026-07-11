@@ -2,7 +2,11 @@ import { Image, Send, X } from "lucide-react";
 import { useRef, useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { useChatStore } from "../store/useChatStore";
-import { uploadToCloudinary } from "../lib/cloudinary";
+import {
+  MAX_IMAGE_SIZE,
+  VALID_IMAGE_TYPES,
+  uploadToCloudinary,
+} from "../lib/cloudinary";
 
 const MessageInput = () => {
   const [text, setText] = useState("");
@@ -11,8 +15,11 @@ const MessageInput = () => {
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+  const uploadOperationRef = useRef(null);
   const { sendMessage, selectedUser, emitTyping, emitStopTyping } =
     useChatStore();
+  const selectedUserIdRef = useRef(selectedUser?._id);
+  selectedUserIdRef.current = selectedUser?._id;
 
   // Reset form state when selected user changes (BUG FIX: image showing on wrong user)
   useEffect(() => {
@@ -21,6 +28,7 @@ const MessageInput = () => {
     setImagePreview(null);
     setImageFile(null);
     setIsUploading(false);
+    uploadOperationRef.current = null;
     if (fileInputRef.current) fileInputRef.current.value = "";
 
     // Clear typing timeout
@@ -65,16 +73,17 @@ const MessageInput = () => {
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    const conversationId = selectedUser?._id;
 
-    if (!file.type.startsWith("image/")) {
-      toast.error("Please select an image file");
+    if (!VALID_IMAGE_TYPES.includes(file.type)) {
+      toast.error("Only JPEG, PNG, GIF, and WebP images are allowed");
+      e.target.value = "";
       return;
     }
 
-    // Check file size (5MB max)
-    const MAX_SIZE = 5 * 1024 * 1024;
-    if (file.size > MAX_SIZE) {
+    if (file.size > MAX_IMAGE_SIZE) {
       toast.error("Image size must be less than 5MB");
+      e.target.value = "";
       return;
     }
 
@@ -84,7 +93,9 @@ const MessageInput = () => {
     // Create preview
     const reader = new FileReader();
     reader.onloadend = () => {
-      setImagePreview(reader.result);
+      if (selectedUserIdRef.current === conversationId) {
+        setImagePreview(reader.result);
+      }
     };
     reader.readAsDataURL(file);
   };
@@ -99,13 +110,17 @@ const MessageInput = () => {
     e.preventDefault();
     if (!text.trim() && !imagePreview) return;
 
+    const receiverId = selectedUser?._id;
+    if (!receiverId) return;
+
+    const operationId = Symbol("message-upload");
+    uploadOperationRef.current = operationId;
+    const messageText = text.trim();
+
     try {
       setIsUploading(true);
 
-      // Stop typing indicator
-      if (selectedUser) {
-        emitStopTyping(selectedUser._id);
-      }
+      emitStopTyping(receiverId);
 
       let imageUrl = null;
 
@@ -115,27 +130,33 @@ const MessageInput = () => {
           imageUrl = await uploadToCloudinary(imageFile);
         } catch (uploadError) {
           toast.error(uploadError.message || "Failed to upload image");
-          setIsUploading(false);
           return;
         }
       }
 
       // Send message with text and/or image URL
-      await sendMessage({
-        text: text.trim() || undefined,
-        image: imageUrl || undefined,
-      });
+      const sent = await sendMessage(
+        {
+          text: messageText || undefined,
+          image: imageUrl || undefined,
+        },
+        receiverId,
+      );
 
-      // Clear form
-      setText("");
-      setImagePreview(null);
-      setImageFile(null);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      if (sent && selectedUserIdRef.current === receiverId) {
+        setText("");
+        setImagePreview(null);
+        setImageFile(null);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      }
     } catch (error) {
       console.error("Failed to send message:", error);
       toast.error("Failed to send message");
     } finally {
-      setIsUploading(false);
+      if (uploadOperationRef.current === operationId) {
+        uploadOperationRef.current = null;
+        setIsUploading(false);
+      }
     }
   };
 
@@ -154,6 +175,7 @@ const MessageInput = () => {
               className="absolute -top-2 -right-2 flex size-6 items-center justify-center rounded-full bg-base-200 shadow-md transition-colors duration-200 hover:bg-base-300"
               type="button"
               disabled={isUploading}
+              aria-label="Remove image attachment"
             >
               <X className="size-3.5" />
             </button>
@@ -186,6 +208,7 @@ const MessageInput = () => {
               }`}
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploading}
+              aria-label="Attach an image"
             >
               <Image size={18} />
             </button>
@@ -194,7 +217,7 @@ const MessageInput = () => {
 
         <input
           type="file"
-          accept="image/*"
+          accept="image/jpeg,image/png,image/gif,image/webp"
           className="hidden"
           ref={fileInputRef}
           onChange={handleImageChange}
@@ -209,6 +232,7 @@ const MessageInput = () => {
               : "btn-primary text-primary-content"
           }`}
           disabled={(!text.trim() && !imagePreview) || isUploading}
+          aria-label="Send message"
         >
           {isUploading ? (
             <span className="loading loading-spinner loading-xs"></span>

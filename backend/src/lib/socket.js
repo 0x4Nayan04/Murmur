@@ -2,6 +2,7 @@ import { Server } from "socket.io";
 import http from "http";
 import express from "express";
 import cookieParser from "cookie-parser";
+import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -31,6 +32,49 @@ const io = new Server(server, {
   },
 });
 
+const parseCookies = (cookieHeader = "") => {
+  return Object.fromEntries(
+    cookieHeader
+      .split(";")
+      .map((part) => part.trim())
+      .filter(Boolean)
+      .map((part) => {
+        const separatorIndex = part.indexOf("=");
+        if (separatorIndex === -1) return [part, ""];
+        const key = part.slice(0, separatorIndex);
+        const value = part.slice(separatorIndex + 1);
+        try {
+          return [key, decodeURIComponent(value)];
+        } catch {
+          return [key, value];
+        }
+      }),
+  );
+};
+
+// Authenticate every socket with the httpOnly JWT cookie — never trust query.userId
+io.use((socket, next) => {
+  try {
+    const cookies = parseCookies(socket.handshake.headers.cookie);
+    const token = cookies.jwt;
+
+    if (!token) {
+      return next(new Error("Unauthorized - No Token Provided"));
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (!decoded?.userId) {
+      return next(new Error("Unauthorized - Invalid Token"));
+    }
+
+    socket.userId = String(decoded.userId);
+    next();
+  } catch (error) {
+    console.warn("Socket auth failed:", error.message);
+    next(new Error("Unauthorized - Invalid Token"));
+  }
+});
+
 export function getReceiverSocketId(userId) {
   return userSocketMap[userId];
 }
@@ -41,11 +85,10 @@ const userSocketMap = {}; // {userId: socketId}
 io.on("connection", (socket) => {
   console.log("A user connected", socket.id);
 
-  const userId = socket.handshake.query.userId;
+  const userId = socket.userId;
 
-  // Validate userId exists and is not undefined
-  if (!userId || userId === "undefined") {
-    console.warn("Socket connection rejected: missing or invalid userId");
+  if (!userId) {
+    console.warn("Socket connection rejected: missing authenticated userId");
     socket.disconnect(true);
     return;
   }
@@ -82,9 +125,7 @@ io.on("connection", (socket) => {
 
   socket.on("disconnect", () => {
     console.log("A user disconnected", socket.id);
-    // Get userId from handshake to prevent undefined error
-    const userId = socket.handshake.query.userId;
-    if (userId && userSocketMap[userId]) {
+    if (userSocketMap[userId] === socket.id) {
       delete userSocketMap[userId];
       io.emit("getOnlineUsers", Object.keys(userSocketMap));
     }

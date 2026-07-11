@@ -1,29 +1,28 @@
 import { axiosInstance } from "./axios";
 
+export const VALID_IMAGE_TYPES = [
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/gif",
+  "image/webp",
+];
+
+export const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
+
 /**
  * Upload image directly to Cloudinary
  * This bypasses our backend for better performance
  * @param {File} file - Image file to upload
- * @param {Function} onProgress - Optional progress callback
  * @returns {Promise<string>} - Cloudinary image URL
  */
-export const uploadToCloudinary = async (file, onProgress) => {
+export const uploadToCloudinary = async (file) => {
   try {
-    // Validate file size (5MB max)
-    const MAX_SIZE = 5 * 1024 * 1024; // 5MB
-    if (file.size > MAX_SIZE) {
+    if (file.size > MAX_IMAGE_SIZE) {
       throw new Error("Image size must be less than 5MB");
     }
 
-    // Validate file type
-    const validTypes = [
-      "image/jpeg",
-      "image/jpg",
-      "image/png",
-      "image/gif",
-      "image/webp",
-    ];
-    if (!validTypes.includes(file.type)) {
+    if (!VALID_IMAGE_TYPES.includes(file.type)) {
       throw new Error(
         "Invalid file type. Only JPEG, PNG, GIF, and WebP are allowed",
       );

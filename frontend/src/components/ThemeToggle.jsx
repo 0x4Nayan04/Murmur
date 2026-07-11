@@ -1,18 +1,8 @@
-import { useEffect } from "react";
 import { Moon, Sun } from "lucide-react";
 import { useThemeStore } from "../store/useThemeStore";
 
 const ThemeToggle = () => {
   const { theme, toggleTheme } = useThemeStore();
-
-  useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
-    if (theme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  }, [theme]);
 
   return (
     <button

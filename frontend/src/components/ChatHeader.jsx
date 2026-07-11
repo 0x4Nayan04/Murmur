@@ -22,7 +22,7 @@ const ChatHeader = () => {
               {isOnline && (
                 <div className="absolute -bottom-0.5 -right-0.5">
                   <span className="absolute size-3 animate-ping rounded-full bg-green-400 opacity-75"></span>
-                  <span className="relative size-3 bg-green-500 rounded-full ring-2 ring-base-100"></span>
+                  <span className="block size-3 bg-green-500 rounded-full ring-2 ring-base-100"></span>
                 </div>
               )}
             </div>
@@ -51,6 +51,7 @@ const ChatHeader = () => {
           <button
             onClick={() => setSelectedUser(null)}
             className="btn btn-sm btn-circle btn-ghost transition-colors duration-200 hover:bg-base-200"
+            aria-label="Close conversation"
           >
             <X size={20} />
           </button>

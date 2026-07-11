@@ -15,8 +15,15 @@ const Navbar = () => {
         setMenuOpen(false);
       }
     };
+    const handleEscape = (e) => {
+      if (e.key === "Escape") setMenuOpen(false);
+    };
     document.addEventListener("click", handleClickOutside);
-    return () => document.removeEventListener("click", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("click", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
   }, []);
 
   return (
@@ -49,6 +56,8 @@ const Navbar = () => {
                 className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors duration-200 hover:bg-base-200 sm:gap-3 sm:px-3 sm:py-2"
                 aria-expanded={menuOpen}
                 aria-haspopup="true"
+                aria-controls="account-menu"
+                aria-label="Open account menu"
               >
                 <div className="size-8 overflow-hidden rounded-full border-2 border-primary/20">
                   <img
@@ -66,7 +75,10 @@ const Navbar = () => {
               </button>
 
               {menuOpen && (
-                <div className="absolute right-0 top-full z-50 mt-2 w-48 overflow-hidden rounded-xl border border-base-300 bg-base-100 py-1 shadow-lg">
+                <div
+                  id="account-menu"
+                  className="absolute right-0 top-full z-50 mt-2 w-48 overflow-hidden rounded-xl border border-base-300 bg-base-100 py-1 shadow-lg"
+                >
                   <Link
                     to="/profile"
                     onClick={() => setMenuOpen(false)}
