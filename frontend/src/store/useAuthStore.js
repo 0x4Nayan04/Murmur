@@ -1,12 +1,10 @@
 import { create } from "zustand";
 import { axiosInstance } from "../lib/axios.js";
+import { getSocketUrl } from "../lib/config.js";
+import { getApiErrorMessage } from "../lib/utils.js";
 import toast from "react-hot-toast";
 import { io } from "socket.io-client";
-
-const CONFIGURED_API_URL =
-  import.meta.env.VITE_API_URL ||
-  (import.meta.env.DEV ? "http://localhost:5001" : window.location.origin);
-const BASE_URL = CONFIGURED_API_URL.replace(/\/api\/?$/, "").replace(/\/+$/, "");
+import { useChatStore } from "./useChatStore.js";
 
 const toSafeUser = (user) => {
   if (!user) return null;
@@ -23,8 +21,6 @@ export const useAuthStore = create((set, get) => ({
   isCheckingAuth: true,
   onlineUsers: [],
   socket: null,
-
-  // action
 
   checkAuth: async () => {
     try {
@@ -58,7 +54,7 @@ export const useAuthStore = create((set, get) => ({
       get().connectSocket();
       return true;
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to sign up");
+      toast.error(getApiErrorMessage(error, "Failed to sign up"));
       return false;
     } finally {
       set({ isSigningUp: false });
@@ -75,7 +71,7 @@ export const useAuthStore = create((set, get) => ({
       get().connectSocket();
       return true;
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to log in");
+      toast.error(getApiErrorMessage(error, "Failed to log in"));
       return false;
     } finally {
       set({ isLoggingIn: false });
@@ -89,7 +85,7 @@ export const useAuthStore = create((set, get) => ({
       toast.success("Logged out successfully");
       get().disconnectSocket();
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to log out");
+      toast.error(getApiErrorMessage(error, "Failed to log out"));
       set({ authUser: null });
       get().disconnectSocket();
     }
@@ -105,7 +101,7 @@ export const useAuthStore = create((set, get) => ({
       toast.success("Profile updated successfully");
       return true;
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to update profile");
+      toast.error(getApiErrorMessage(error, "Failed to update profile"));
       return false;
     } finally {
       set({ isUpdatingProfile: false });
@@ -116,8 +112,7 @@ export const useAuthStore = create((set, get) => ({
     const { authUser, socket } = get();
     if (!authUser || socket) return;
 
-    // Identity comes from the httpOnly JWT cookie — do not send userId in the query
-    const newSocket = io(BASE_URL, {
+    const newSocket = io(getSocketUrl(), {
       withCredentials: true,
     });
 
@@ -132,6 +127,7 @@ export const useAuthStore = create((set, get) => ({
     });
   },
   disconnectSocket: () => {
+    useChatStore.getState().unsubscribeFromMessages();
     get().socket?.disconnect();
     set({ socket: null, onlineUsers: [] });
   },

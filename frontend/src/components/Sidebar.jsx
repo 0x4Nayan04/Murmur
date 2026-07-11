@@ -2,10 +2,9 @@ import { useEffect, useState, useMemo } from "react";
 import { useChatStore } from "../store/useChatStore";
 import { useAuthStore } from "../store/useAuthStore";
 import SidebarSkeleton from "./skeletons/SidebarSkeleton";
-import { Users, Search, Circle, MessageCircle, X } from "lucide-react";
+import SidebarUserItem from "./SidebarUserItem";
+import { Users, Search, MessageCircle, X } from "lucide-react";
 import { normalizeId } from "../lib/utils";
-
-const formatUnreadCount = (count) => (count > 99 ? "99+" : String(count));
 
 const Sidebar = ({ className = "" }) => {
   const {
@@ -43,6 +42,10 @@ const Sidebar = ({ className = "" }) => {
     });
   }, [users, showOnlineOnly, onlineUserIds, debouncedSearch]);
 
+  const activeCount = onlineUserIds.has(authUser?._id)
+    ? Math.max(onlineUsers.length - 1, 0)
+    : onlineUsers.length;
+
   if (isUsersLoading) return <SidebarSkeleton />;
 
   return (
@@ -55,18 +58,11 @@ const Sidebar = ({ className = "" }) => {
             <div className="bg-primary/10 p-2 rounded-full">
               <MessageCircle className="size-5 text-primary" />
             </div>
-            <h2 className="font-semibold text-lg">
-              Connections
-            </h2>
+            <h2 className="font-semibold text-lg">Connections</h2>
           </div>
 
           <div>
-            <span className="badge badge-primary">
-              {onlineUserIds.has(authUser?._id)
-                ? Math.max(onlineUsers.length - 1, 0)
-                : onlineUsers.length}{" "}
-              active now
-            </span>
+            <span className="badge badge-primary">{activeCount} active now</span>
           </div>
         </div>
 
@@ -101,9 +97,7 @@ const Sidebar = ({ className = "" }) => {
                 onChange={(e) => setShowOnlineOnly(e.target.checked)}
                 className="toggle toggle-sm toggle-primary"
               />
-              <span className="text-sm">
-                Show active only
-              </span>
+              <span className="text-sm">Show active only</span>
             </label>
           </div>
         </div>
@@ -111,62 +105,16 @@ const Sidebar = ({ className = "" }) => {
 
       <div className="overflow-y-auto overflow-x-hidden w-full py-3 pr-2 flex-1 min-h-0 scrollbar-thin">
         {filteredUsers.length > 0 ? (
-          filteredUsers.map((user) => {
-            const unread = unreadCounts[normalizeId(user._id)] || 0;
-            return (
-              <button
-                type="button"
-                key={user._id}
-                onClick={() => setSelectedUser(user)}
-                className={
-                  selectedUser?._id === user._id
-                    ? "w-[calc(100%_-_1rem)] p-3 flex flex-row items-center gap-3 mb-1 mx-2 rounded-xl border bg-primary/10 border-primary/20 transition-colors duration-200 hover:bg-primary/15 hover:border-primary/25"
-                    : "w-[calc(100%_-_1rem)] p-3 flex flex-row items-center gap-3 mb-1 mx-2 rounded-xl border border-transparent transition-colors duration-200 hover:bg-base-200"
-                }
-                aria-current={
-                  selectedUser?._id === user._id ? "true" : undefined
-                }
-                aria-label={
-                  unread > 0
-                    ? `${user.fullName}, ${unread} unread`
-                    : user.fullName
-                }
-              >
-                <div className="relative mx-0 shrink-0">
-                  <img
-                    src={user.profilePic || "/avatar.png"}
-                    alt=""
-                    className="size-12 object-cover rounded-full shadow-sm"
-                  />
-                  {onlineUserIds.has(user._id) && (
-                    <div className="absolute -bottom-0.5 -right-0.5">
-                      <span className="block size-3 bg-green-500 rounded-full ring-2 ring-base-100"></span>
-                    </div>
-                  )}
-                </div>
-                <div className="flex text-left min-w-0 flex-1 items-center gap-2">
-                  <div className="min-w-0 flex-1">
-                    <div className="font-medium truncate">{user.fullName}</div>
-                    <div className="flex items-center gap-1 text-sm">
-                      {onlineUserIds.has(user._id) ? (
-                        <>
-                          <Circle className="size-2 fill-green-500 text-green-500" />
-                          <span className="text-green-600">Online</span>
-                        </>
-                      ) : (
-                        <span className="text-zinc-400">Offline</span>
-                      )}
-                    </div>
-                  </div>
-                  {unread > 0 && (
-                    <span className="badge badge-primary badge-sm shrink-0">
-                      {formatUnreadCount(unread)}
-                    </span>
-                  )}
-                </div>
-              </button>
-            );
-          })
+          filteredUsers.map((user) => (
+            <SidebarUserItem
+              key={user._id}
+              user={user}
+              isSelected={selectedUser?._id === user._id}
+              isOnline={onlineUserIds.has(user._id)}
+              unread={unreadCounts[normalizeId(user._id)] || 0}
+              onSelect={setSelectedUser}
+            />
+          ))
         ) : (
           <div className="flex flex-col items-center justify-center h-40 text-zinc-500">
             <Users className="size-10 opacity-20 mb-2" />

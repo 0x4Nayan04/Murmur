@@ -1,17 +1,13 @@
 import Navbar from "./components/Navbar";
+import { AppRoutes, AuthLoadingScreen } from "./components/AppRoutes";
 
-import HomePage from "./pages/HomePage";
-import SignUpPage from "./pages/SignUpPage";
-import LoginPage from "./pages/LoginPage";
-import ProfilePage from "./pages/ProfilePage";
-
-import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { useAuthStore } from "./store/useAuthStore";
 import { useChatStore } from "./store/useChatStore";
 import { useThemeStore } from "./store/useThemeStore";
 import { useEffect } from "react";
+import { onUnauthorized } from "./lib/sessionEvents";
 
-import { Loader } from "lucide-react";
 import { Toaster } from "react-hot-toast";
 
 const App = () => {
@@ -26,50 +22,29 @@ const App = () => {
   }, [checkAuth]);
 
   useEffect(() => {
+    return onUnauthorized(() => {
+      const { authUser: currentUser, disconnectSocket } =
+        useAuthStore.getState();
+      if (!currentUser) return;
+
+      useAuthStore.setState({ authUser: null });
+      disconnectSocket();
+      useChatStore.getState().resetChat();
+    });
+  }, []);
+
+  useEffect(() => {
     if (!authUser && !isCheckingAuth) resetChat();
   }, [authUser, isCheckingAuth, resetChat]);
 
-  if (isCheckingAuth && !authUser)
-    return (
-      <div
-        className="flex items-center justify-center h-screen"
-        role="status"
-        aria-live="polite"
-        aria-label="Checking authentication"
-      >
-        <Loader className="size-10 animate-spin" aria-hidden="true" />
-      </div>
-    );
+  if (isCheckingAuth && !authUser) {
+    return <AuthLoadingScreen />;
+  }
 
   return (
     <>
       {!isAuthRoute && <Navbar />}
-
-      <Routes>
-        <Route
-          path="/"
-          element={authUser ? <HomePage /> : <Navigate to="/login" replace />}
-        />
-        <Route
-          path="/signup"
-          element={!authUser ? <SignUpPage /> : <Navigate to="/" replace />}
-        />
-        <Route
-          path="/login"
-          element={!authUser ? <LoginPage /> : <Navigate to="/" replace />}
-        />
-        <Route
-          path="/profile"
-          element={
-            authUser ? <ProfilePage /> : <Navigate to="/login" replace />
-          }
-        />
-        <Route
-          path="*"
-          element={<Navigate to={authUser ? "/" : "/login"} replace />}
-        />
-      </Routes>
-
+      <AppRoutes authUser={authUser} />
       <Toaster />
     </>
   );

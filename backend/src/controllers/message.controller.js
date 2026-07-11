@@ -2,7 +2,27 @@ import User from "../models/user.model.js";
 import Message from "../models/message.model.js";
 
 import cloudinary from "../lib/cloudinary.js";
-import { getReceiverSocketId, io } from "../lib/socket.js";
+import {
+  findSenderMessage,
+  MessageForbiddenError,
+  MessageNotFoundError,
+  resolveMessageImageUrl,
+} from "../lib/messageHelpers.js";
+import { emitToUser } from "../lib/socket.js";
+
+const sendMessageAccessError = (error, res) => {
+  if (error instanceof MessageNotFoundError) {
+    res.status(404).json({ error: error.message });
+    return true;
+  }
+
+  if (error instanceof MessageForbiddenError) {
+    res.status(403).json({ error: error.message });
+    return true;
+  }
+
+  return false;
+};
 
 export const getUsersForSidebar = async (req, res) => {
   try {
@@ -23,12 +43,10 @@ export const getMessages = async (req, res) => {
     const { id: userToChatId } = req.params;
     const myId = req.user._id;
 
-    // Pagination parameters
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
     const skip = (page - 1) * limit;
 
-    // Query to find messages between two users
     const query = {
       $or: [
         { senderId: myId, receiverId: userToChatId },
@@ -36,16 +54,13 @@ export const getMessages = async (req, res) => {
       ],
     };
 
-    // Fetch messages with pagination (newest first, then reverse)
     const messages = await Message.find(query)
-      .sort({ createdAt: -1 }) // Newest first for pagination
+      .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
 
-    // Reverse to show oldest first in UI
     const sortedMessages = messages.reverse();
 
-    // Get total count for pagination metadata
     const totalCount = await Message.countDocuments(query);
 
     res.status(200).json({
@@ -72,28 +87,17 @@ export const sendMessage = async (req, res) => {
     const { id: receiverId } = req.params;
     const senderId = req.user._id;
 
-    // Validate: must have either text or image
     if (!text?.trim() && !image) {
       return res.status(400).json({
         error: "Message must contain text or an image",
       });
     }
 
-    let imageUrl;
-    if (image) {
-      // Check if it's already a URL (from direct Cloudinary upload) or base64
-      if (image.startsWith("http://") || image.startsWith("https://")) {
-        // Already a URL, use directly
-        imageUrl = image;
-      } else if (image.startsWith("data:")) {
-        // Base64 image - upload to Cloudinary
-        const uploadResponse = await cloudinary.uploader.upload(image);
-        imageUrl = uploadResponse.secure_url;
-      } else {
-        return res.status(400).json({
-          error: "Invalid image format. Expected URL or base64 data.",
-        });
-      }
+    const imageUrl = await resolveMessageImageUrl(image, cloudinary);
+    if (image && imageUrl === null) {
+      return res.status(400).json({
+        error: "Invalid image format. Expected URL or base64 data.",
+      });
     }
 
     const newMessage = new Message({
@@ -105,10 +109,7 @@ export const sendMessage = async (req, res) => {
 
     await newMessage.save();
 
-    const receiverSocketId = getReceiverSocketId(receiverId);
-    if (receiverSocketId) {
-      io.to(receiverSocketId).emit("newMessage", newMessage);
-    }
+    emitToUser(receiverId, "newMessage", newMessage);
 
     res.status(201).json(newMessage);
   } catch (error) {
@@ -117,11 +118,10 @@ export const sendMessage = async (req, res) => {
   }
 };
 
-// Mark messages as read
 export const markMessagesAsRead = async (req, res) => {
   try {
-    const { id: senderId } = req.params; // Messages from this user
-    const receiverId = req.user._id; // Current user
+    const { id: senderId } = req.params;
+    const receiverId = req.user._id;
 
     const result = await Message.updateMany(
       {
@@ -138,14 +138,10 @@ export const markMessagesAsRead = async (req, res) => {
       },
     );
 
-    // Emit socket event to sender
-    const senderSocketId = getReceiverSocketId(senderId);
-    if (senderSocketId) {
-      io.to(senderSocketId).emit("messagesRead", {
-        readBy: receiverId,
-        count: result.modifiedCount,
-      });
-    }
+    emitToUser(senderId, "messagesRead", {
+      readBy: receiverId,
+      count: result.modifiedCount,
+    });
 
     res.status(200).json({
       success: true,
@@ -157,12 +153,10 @@ export const markMessagesAsRead = async (req, res) => {
   }
 };
 
-// Get unread count for all conversations
 export const getAllUnreadCounts = async (req, res) => {
   try {
     const myId = req.user._id;
 
-    // Aggregate unread counts by sender
     const unreadCounts = await Message.aggregate([
       {
         $match: {
@@ -179,7 +173,6 @@ export const getAllUnreadCounts = async (req, res) => {
       },
     ]);
 
-    // Convert to object: { userId: count }
     const countsMap = {};
     unreadCounts.forEach((item) => {
       countsMap[item._id.toString()] = item.count;
@@ -192,7 +185,6 @@ export const getAllUnreadCounts = async (req, res) => {
   }
 };
 
-// Edit message
 export const editMessage = async (req, res) => {
   try {
     const { messageId } = req.params;
@@ -205,22 +197,8 @@ export const editMessage = async (req, res) => {
       });
     }
 
-    const message = await Message.findById(messageId);
+    const message = await findSenderMessage(messageId, userId, "edit");
 
-    if (!message) {
-      return res.status(404).json({
-        error: "Message not found",
-      });
-    }
-
-    // Only sender can edit
-    if (message.senderId.toString() !== userId.toString()) {
-      return res.status(403).json({
-        error: "Not authorized to edit this message",
-      });
-    }
-
-    // Cannot edit deleted messages
     if (message.isDeleted) {
       return res.status(400).json({
         error: "Cannot edit deleted message",
@@ -233,63 +211,43 @@ export const editMessage = async (req, res) => {
 
     await message.save();
 
-    // Emit socket event to receiver
-    const receiverSocketId = getReceiverSocketId(message.receiverId.toString());
-    if (receiverSocketId) {
-      io.to(receiverSocketId).emit("messageEdited", message);
-    }
+    emitToUser(message.receiverId.toString(), "messageEdited", message);
 
     res.status(200).json({ success: true, data: message });
   } catch (error) {
+    if (sendMessageAccessError(error, res)) return;
+
     console.error("Error in editMessage: ", error.message);
     res.status(500).json({ error: "Internal server error" });
   }
 };
 
-// Delete message (soft delete)
 export const deleteMessage = async (req, res) => {
   try {
     const { messageId } = req.params;
     const userId = req.user._id;
 
-    const message = await Message.findById(messageId);
+    const message = await findSenderMessage(messageId, userId, "delete");
 
-    if (!message) {
-      return res.status(404).json({
-        error: "Message not found",
-      });
-    }
-
-    // Only sender can delete
-    if (message.senderId.toString() !== userId.toString()) {
-      return res.status(403).json({
-        error: "Not authorized to delete this message",
-      });
-    }
-
-    // Already deleted
     if (message.isDeleted) {
       return res.status(400).json({
         error: "Message already deleted",
       });
     }
 
-    // Soft delete
     message.isDeleted = true;
     message.deletedAt = new Date();
-    message.text = null; // Clear content
-    message.image = null; // Clear image
+    message.text = null;
+    message.image = null;
 
     await message.save();
 
-    // Emit socket event to receiver
-    const receiverSocketId = getReceiverSocketId(message.receiverId.toString());
-    if (receiverSocketId) {
-      io.to(receiverSocketId).emit("messageDeleted", { messageId });
-    }
+    emitToUser(message.receiverId.toString(), "messageDeleted", { messageId });
 
     res.status(200).json({ success: true, data: message });
   } catch (error) {
+    if (sendMessageAccessError(error, res)) return;
+
     console.error("Error in deleteMessage: ", error.message);
     res.status(500).json({ error: "Internal server error" });
   }

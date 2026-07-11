@@ -12,3 +12,31 @@ export function formatMessageTime(date) {
     hour12: false,
   });
 }
+
+export function groupMessagesByDate(messages) {
+  if (!Array.isArray(messages)) return {};
+
+  return messages.reduce((groups, message) => {
+    const messageDate = new Date(message.createdAt);
+    const dateKey = [
+      messageDate.getFullYear(),
+      String(messageDate.getMonth() + 1).padStart(2, "0"),
+      String(messageDate.getDate()).padStart(2, "0"),
+    ].join("-");
+
+    if (!groups[dateKey]) {
+      groups[dateKey] = [];
+    }
+    groups[dateKey].push(message);
+    return groups;
+  }, {});
+}
+
+export function formatDateDivider(dateKey) {
+  return new Date(`${dateKey}T00:00:00`).toLocaleDateString(undefined, {
+    weekday: "long",
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}

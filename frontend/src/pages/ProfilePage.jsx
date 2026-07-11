@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAuthStore } from "../store/useAuthStore";
+import { validateImageFile } from "../lib/cloudinary";
 import { Camera, Calendar, Mail, Shield, User } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -21,21 +22,9 @@ const ProfilePage = () => {
     const file = e.target.files[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Image must be less than 5MB");
-      return;
-    }
-
-    if (
-      ![
-        "image/jpeg",
-        "image/jpg",
-        "image/png",
-        "image/gif",
-        "image/webp",
-      ].includes(file.type)
-    ) {
-      toast.error("Only JPEG, PNG, GIF, and WebP images are allowed");
+    const validationError = validateImageFile(file);
+    if (validationError) {
+      toast.error(validationError);
       return;
     }
 

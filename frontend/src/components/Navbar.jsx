@@ -48,59 +48,61 @@ const Navbar = () => {
 
           {authUser && (
             <div
-              className="relative ml-2 border-l border-base-300 pl-3 sm:ml-4 sm:pl-4"
+              className="ml-2 shrink-0 border-l border-base-300 pl-3 sm:ml-4 sm:pl-4"
               ref={menuRef}
             >
-              <button
-                type="button"
-                onClick={() => setMenuOpen((o) => !o)}
-                className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors duration-200 hover:bg-base-200 sm:gap-3 sm:px-3 sm:py-2"
-                aria-expanded={menuOpen}
-                aria-haspopup="true"
-                aria-controls="account-menu"
-                aria-label="Open account menu"
-              >
-                <div className="size-8 overflow-hidden rounded-full border-2 border-primary/20">
-                  <img
-                    src={authUser.profilePic || "/avatar.png"}
-                    alt={authUser.fullName}
-                    className="size-full object-cover"
-                  />
-                </div>
-                <span className="hidden max-w-[120px] truncate font-medium sm:block">
-                  {authUser.fullName}
-                </span>
-                <ChevronDown
-                  className={`size-4 text-base-content/60 transition-transform ${menuOpen ? "rotate-180" : ""}`}
-                />
-              </button>
-
-              {menuOpen && (
-                <div
-                  id="account-menu"
-                  className="absolute right-0 top-full z-50 mt-2 w-48 overflow-hidden rounded-xl border border-base-300 bg-base-100 py-1 shadow-lg"
+              <div className="relative w-fit">
+                <button
+                  type="button"
+                  onClick={() => setMenuOpen((o) => !o)}
+                  className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors duration-200 hover:bg-base-200 sm:gap-3 sm:px-3 sm:py-2"
+                  aria-expanded={menuOpen}
+                  aria-haspopup="true"
+                  aria-controls="account-menu"
+                  aria-label="Open account menu"
                 >
-                  <Link
-                    to="/profile"
-                    onClick={() => setMenuOpen(false)}
-                    className="flex items-center gap-2 px-4 py-2.5 text-sm transition-colors duration-200 hover:bg-base-200"
+                  <div className="size-8 overflow-hidden rounded-full border-2 border-primary/20">
+                    <img
+                      src={authUser.profilePic || "/avatar.png"}
+                      alt={authUser.fullName}
+                      className="size-full object-cover"
+                    />
+                  </div>
+                  <span className="hidden max-w-[120px] truncate font-medium sm:block">
+                    {authUser.fullName}
+                  </span>
+                  <ChevronDown
+                    className={`size-4 text-base-content/60 transition-transform ${menuOpen ? "rotate-180" : ""}`}
+                  />
+                </button>
+
+                {menuOpen && (
+                  <div
+                    id="account-menu"
+                    className="absolute right-0 top-full z-50 mt-2 flex w-48 flex-col overflow-hidden rounded-xl border border-base-300 bg-base-100 shadow-lg"
                   >
-                    <User className="size-4 text-primary" />
-                    <span>My Profile</span>
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMenuOpen(false);
-                      logout();
-                    }}
-                    className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-error transition-colors duration-200 hover:bg-error/10"
-                  >
-                    <LogOut className="size-4" />
-                    <span>Sign Out</span>
-                  </button>
-                </div>
-              )}
+                    <Link
+                      to="/profile"
+                      onClick={() => setMenuOpen(false)}
+                      className="flex w-full items-center gap-2 px-4 py-2.5 text-sm transition-colors duration-200 hover:bg-base-200"
+                    >
+                      <User className="size-4 text-primary" />
+                      <span>My Profile</span>
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        logout();
+                      }}
+                      className="flex w-full items-center gap-2 border-0 bg-transparent px-4 py-2.5 text-left text-sm text-error transition-colors duration-200 hover:bg-error/10"
+                    >
+                      <LogOut className="size-4" />
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
