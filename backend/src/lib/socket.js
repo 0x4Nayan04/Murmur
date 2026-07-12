@@ -75,32 +75,36 @@ io.use((socket, next) => {
   }
 });
 
-// Process-local presence map. Single-instance only; use @socket.io/redis-adapter
-// when running multiple replicas. Each user can have multiple socket IDs (tabs).
-const userSocketMap = {};
+// Process-local presence counts. Single-instance only; use shared presence
+// storage alongside a Socket.IO adapter when running multiple replicas.
+const userConnectionCounts = new Map();
 
 const TYPING_RATE_LIMIT = 20;
 const TYPING_RATE_WINDOW_MS = 10_000;
 const typingRateLimits = new Map();
 
-const addUserSocket = (userId, socketId) => {
-  if (!userSocketMap[userId]) {
-    userSocketMap[userId] = new Set();
-  }
-  userSocketMap[userId].add(socketId);
+const getUserRoom = (userId) => `user:${String(userId)}`;
+
+const addUserConnection = (userId) => {
+  const previousCount = userConnectionCounts.get(userId) ?? 0;
+  userConnectionCounts.set(userId, previousCount + 1);
+  return previousCount === 0;
 };
 
-const removeUserSocket = (userId, socketId) => {
-  const sockets = userSocketMap[userId];
-  if (!sockets) return;
+const removeUserConnection = (userId) => {
+  const currentCount = userConnectionCounts.get(userId);
+  if (!currentCount) return false;
 
-  sockets.delete(socketId);
-  if (sockets.size === 0) {
-    delete userSocketMap[userId];
+  if (currentCount === 1) {
+    userConnectionCounts.delete(userId);
+    return true;
   }
+
+  userConnectionCounts.set(userId, currentCount - 1);
+  return false;
 };
 
-const getOnlineUserIds = () => Object.keys(userSocketMap);
+const getOnlineUserIds = () => [...userConnectionCounts.keys()];
 
 const isTypingRateLimited = (socketId) => {
   const now = Date.now();
@@ -145,19 +149,8 @@ const handleTypingEvent = (socket, receiverId, isTyping) => {
   });
 };
 
-export function getReceiverSocketId(userId) {
-  const sockets = userSocketMap[userId];
-  if (!sockets || sockets.size === 0) return null;
-  return [...sockets][0];
-}
-
 export function emitToUser(userId, event, payload) {
-  const sockets = userSocketMap[String(userId)];
-  if (!sockets) return;
-
-  for (const socketId of sockets) {
-    io.to(socketId).emit(event, payload);
-  }
+  io.to(getUserRoom(userId)).emit(event, payload);
 }
 
 io.on("connection", (socket) => {
@@ -171,8 +164,14 @@ io.on("connection", (socket) => {
     return;
   }
 
-  addUserSocket(userId, socket.id);
-  io.emit("getOnlineUsers", getOnlineUserIds());
+  socket.join(getUserRoom(userId));
+  const becameOnline = addUserConnection(userId);
+
+  if (becameOnline) {
+    io.emit("getOnlineUsers", getOnlineUserIds());
+  } else {
+    socket.emit("getOnlineUsers", getOnlineUserIds());
+  }
 
   socket.on("typing", (data) => {
     handleTypingEvent(socket, data?.receiverId, true);
@@ -185,8 +184,11 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => {
     logger.info("Socket disconnected", { socketId: socket.id, userId });
     typingRateLimits.delete(socket.id);
-    removeUserSocket(userId, socket.id);
-    io.emit("getOnlineUsers", getOnlineUserIds());
+    const becameOffline = removeUserConnection(userId);
+
+    if (becameOffline) {
+      io.emit("getOnlineUsers", getOnlineUserIds());
+    }
   });
 });
 
