@@ -67,9 +67,9 @@ export const useMessageComposer = ({
   const typingTimeoutRef = useRef(null);
   const uploadOperationRef = useRef(null);
   const selectedUserIdRef = useRef(selectedUser?._id);
-  selectedUserIdRef.current = selectedUser?._id;
 
   useEffect(() => {
+    selectedUserIdRef.current = selectedUser?._id;
     dispatch({ type: "RESET" });
     imageFileRef.current = null;
     uploadOperationRef.current = null;
