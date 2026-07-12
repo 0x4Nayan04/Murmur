@@ -2,7 +2,10 @@ export const normalizeId = (id) => {
   if (id == null) return "";
   if (typeof id === "object") {
     if (id._id != null) return String(id._id);
-    if (typeof id.toString === "function" && id.constructor?.name === "ObjectId") {
+    if (
+      typeof id.toString === "function" &&
+      id.constructor?.name === "ObjectId"
+    ) {
       return id.toString();
     }
   }
@@ -23,14 +26,16 @@ export const parseApiFieldErrors = (error) => {
   if (!Array.isArray(details)) return {};
 
   return details.reduce((acc, { field, message }) => {
-    const key =
-      VALIDATION_FIELD_KEYS[field] || field.split(".").pop() || field;
+    const key = VALIDATION_FIELD_KEYS[field] || field.split(".").pop() || field;
     if (!acc[key]) acc[key] = message;
     return acc;
   }, {});
 };
 
-export const getApiErrorMessage = (error, fallback = "Something went wrong") => {
+export const getApiErrorMessage = (
+  error,
+  fallback = "Something went wrong",
+) => {
   if (!error) return fallback;
 
   if (error.code === "ECONNABORTED") {

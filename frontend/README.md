@@ -23,13 +23,13 @@ VITE_API_URL=http://localhost:5001
 
 ## Scripts
 
-| Command | Description |
-| ------- | ----------- |
-| `npm run dev` | Start Vite dev server |
-| `npm run build` | Production build |
-| `npm run lint` | ESLint |
-| `npm run preview` | Preview production build |
-| `npx react-doctor@latest --verbose` | React quality audit |
+| Command                             | Description              |
+| ----------------------------------- | ------------------------ |
+| `npm run dev`                       | Start Vite dev server    |
+| `npm run build`                     | Production build         |
+| `npm run lint`                      | ESLint                   |
+| `npm run preview`                   | Preview production build |
+| `npx react-doctor@latest --verbose` | React quality audit      |
 
 ## Architecture notes
 

@@ -1,7 +1,11 @@
 import { normalizeId } from "../utils.js";
 import { useAuthStore } from "../../store/useAuthStore.js";
 
-export const createOptimisticMessage = (authUser, targetUserId, messageData) => ({
+export const createOptimisticMessage = (
+  authUser,
+  targetUserId,
+  messageData,
+) => ({
   _id: `temp-${Date.now()}-${Math.random()}`,
   senderId: authUser._id,
   receiverId: targetUserId,
@@ -73,6 +77,9 @@ export const parseMessagesResponse = (responseData) => ({
   pagination: readPaginationFromResponse(responseData),
 });
 
+export { isPartnerTyping } from "./typingState.js";
+export { deriveReadByPartnersFromMessages } from "./readState.js";
+
 const handleIncomingMessage = (get, set, newMessage, axiosInstance) => {
   const selectedUserId = get().selectedUser?._id;
   const senderId = normalizeId(newMessage.senderId);
@@ -108,12 +115,18 @@ export const registerChatSocketHandlers = (socket, get, set, axiosInstance) => {
   );
 
   socket.on("userTyping", ({ senderId, isTyping }) => {
-    set((state) => ({
-      typingUsers: {
-        ...state.typingUsers,
-        [senderId]: isTyping,
-      },
-    }));
+    const senderKey = normalizeId(senderId);
+    if (!senderKey) return;
+
+    set((state) => {
+      const typingUsers = { ...state.typingUsers };
+      if (isTyping) {
+        typingUsers[senderKey] = true;
+      } else {
+        delete typingUsers[senderKey];
+      }
+      return { typingUsers };
+    });
   });
 
   socket.on("messagesRead", ({ readBy }) => {
@@ -170,7 +183,7 @@ export const appendOptimisticMessage = (
   targetUserId,
   optimisticMessage,
 ) => {
-  if (selectedUserId !== targetUserId) return;
+  if (normalizeId(selectedUserId) !== normalizeId(targetUserId)) return;
   set({ messages: [...messages, optimisticMessage] });
 };
 
@@ -181,7 +194,7 @@ export const commitSentMessage = (
   optimisticId,
   serverMessage,
 ) => {
-  if (get().selectedUser?._id !== targetUserId) return;
+  if (normalizeId(get().selectedUser?._id) !== normalizeId(targetUserId)) return;
 
   const partnerId = normalizeId(serverMessage.receiverId);
   const partnerAlreadyRead = Boolean(get().readByPartners?.[partnerId]);
@@ -199,13 +212,17 @@ export const commitSentMessage = (
 };
 
 export const rollbackSentMessage = (get, set, targetUserId, optimisticId) => {
-  if (get().selectedUser?._id !== targetUserId) return;
+  if (normalizeId(get().selectedUser?._id) !== normalizeId(targetUserId)) return;
   set({
     messages: removeOptimisticMessage(get().messages, optimisticId),
   });
 };
 
-export const fetchOlderMessagesPage = async (axiosInstance, userId, nextPage) => {
+export const fetchOlderMessagesPage = async (
+  axiosInstance,
+  userId,
+  nextPage,
+) => {
   const res = await axiosInstance.get(`/messages/${userId}`, {
     params: { page: nextPage },
   });

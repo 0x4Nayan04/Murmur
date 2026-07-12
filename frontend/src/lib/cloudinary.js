@@ -26,8 +26,7 @@ export const uploadToCloudinary = async (file) => {
     throw new Error(validationError);
   }
 
-  const { data: signatureData } =
-    await axiosInstance.get("/upload/signature");
+  const { data: signatureData } = await axiosInstance.get("/upload/signature");
 
   if (!signatureData.success) {
     throw new Error("Failed to get upload signature");

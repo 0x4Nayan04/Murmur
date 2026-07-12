@@ -55,7 +55,10 @@ const ProfilePage = () => {
   };
 
   return (
-    <main id="main-content" className="min-h-screen bg-base-200 px-4 pb-12 pt-24">
+    <main
+      id="main-content"
+      className="min-h-screen bg-base-200 px-4 pb-12 pt-24"
+    >
       <div className="mx-auto max-w-2xl">
         <Link
           to="/"

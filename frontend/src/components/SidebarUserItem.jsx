@@ -3,13 +3,7 @@ import OnlineStatus from "./OnlineStatus";
 
 const formatUnreadCount = (count) => (count > 99 ? "99+" : String(count));
 
-const SidebarUserItem = ({
-  user,
-  isSelected,
-  isOnline,
-  unread,
-  onSelect,
-}) => (
+const SidebarUserItem = ({ user, isSelected, isOnline, unread, onSelect }) => (
   <button
     type="button"
     onClick={() => onSelect(user)}

@@ -35,8 +35,7 @@ const LoginPage = () => {
 
     const errors = {};
     if (!email) errors.email = "Email is required";
-    else if (!/\S+@\S+\.\S+/.test(email))
-      errors.email = "Invalid email format";
+    else if (!/\S+@\S+\.\S+/.test(email)) errors.email = "Invalid email format";
     if (!password) errors.password = "Password is required";
 
     if (Object.keys(errors).length > 0) {
@@ -102,7 +101,10 @@ const LoginPage = () => {
                   required
                 />
               </div>
-              <FormFieldError id="login-email-error" message={fieldErrors.email} />
+              <FormFieldError
+                id="login-email-error"
+                message={fieldErrors.email}
+              />
             </div>
 
             <div className="form-control">

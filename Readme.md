@@ -112,15 +112,15 @@
 
 ### Available Scripts
 
-| Command                | Description                                         |
-| ---------------------- | --------------------------------------------------- |
-| `npm run dev`          | Start both frontend and backend in development mode |
-| `npm run dev:backend`  | Start only backend server (port 5001)               |
-| `npm run dev:frontend` | Start only frontend server (port 5173)              |
-| `npm run build`        | Build production-ready frontend bundle              |
-| `npm run start`        | Start backend in production mode                    |
-| `npm run format`       | Format code with Prettier                           |
-| `npm run format:check` | Check code formatting without changes               |
+| Command                             | Description                                          |
+| ----------------------------------- | ---------------------------------------------------- |
+| `npm run dev`                       | Start both frontend and backend in development mode  |
+| `npm run dev:backend`               | Start only backend server (port 5001)                |
+| `npm run dev:frontend`              | Start only frontend server (port 5173)               |
+| `npm run build`                     | Build production-ready frontend bundle               |
+| `npm run start`                     | Start backend in production mode                     |
+| `npm run format`                    | Format code with Prettier                            |
+| `npm run format:check`              | Check code formatting without changes                |
 | `npx react-doctor@latest --verbose` | Audit frontend React patterns (run from `frontend/`) |
 
 #### Backend Scripts

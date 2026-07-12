@@ -70,7 +70,10 @@ const SignUpPage = () => {
   };
 
   return (
-    <main id="main-content" className="relative grid min-h-screen lg:grid-cols-2">
+    <main
+      id="main-content"
+      className="relative grid min-h-screen lg:grid-cols-2"
+    >
       <div className="absolute top-4 right-4 z-10 sm:top-6 sm:right-6">
         <ThemeToggle />
       </div>

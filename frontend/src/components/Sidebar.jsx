@@ -3,7 +3,14 @@ import { useChatStore } from "../store/useChatStore";
 import { useAuthStore } from "../store/useAuthStore";
 import SidebarSkeleton from "./skeletons/SidebarSkeleton";
 import SidebarUserItem from "./SidebarUserItem";
-import { Users, Search, MessageCircle, X, AlertCircle, RefreshCw } from "lucide-react";
+import {
+  Users,
+  Search,
+  MessageCircle,
+  X,
+  AlertCircle,
+  RefreshCw,
+} from "lucide-react";
 import { normalizeId } from "../lib/utils";
 
 const Sidebar = ({ className = "" }) => {
@@ -85,7 +92,9 @@ const Sidebar = ({ className = "" }) => {
           </div>
 
           <div>
-            <span className="badge badge-primary">{activeCount} active now</span>
+            <span className="badge badge-primary">
+              {activeCount} active now
+            </span>
           </div>
         </div>
 

@@ -7,6 +7,7 @@ import {
   appendOptimisticMessage,
   commitSentMessage,
   createOptimisticMessage,
+  deriveReadByPartnersFromMessages,
   fetchOlderMessagesPage,
   isStaleConversationRequest,
   markMessagesRead,
@@ -87,7 +88,19 @@ export const useChatStore = create((set, get) => ({
       }
 
       const { messages, pagination } = parseMessagesResponse(res.data);
-      set({ messages, messagePagination: pagination });
+      const authUserId = useAuthStore.getState().authUser?._id;
+      const loadedReadByPartners = deriveReadByPartnersFromMessages(
+        messages,
+        authUserId,
+      );
+      set((state) => ({
+        messages,
+        messagePagination: pagination,
+        readByPartners: {
+          ...state.readByPartners,
+          ...loadedReadByPartners,
+        },
+      }));
       get().clearUnreadForUser(userId);
       void markMessagesRead(axiosInstance, userId);
     } catch (error) {
@@ -105,11 +118,7 @@ export const useChatStore = create((set, get) => ({
 
   loadOlderMessages: async () => {
     const { selectedUser, messagePagination, isOlderMessagesLoading } = get();
-    if (
-      !selectedUser ||
-      !messagePagination.hasMore ||
-      isOlderMessagesLoading
-    ) {
+    if (!selectedUser || !messagePagination.hasMore || isOlderMessagesLoading) {
       return false;
     }
 
@@ -135,19 +144,33 @@ export const useChatStore = create((set, get) => ({
         return false;
       }
 
-      set((state) => ({
-        messages: mergeOlderMessages(state.messages, olderMessages),
-        messagePagination: {
-          currentPage: pagination?.currentPage || nextPage,
-          hasMore: Boolean(pagination?.hasMore),
-        },
-      }));
+      set((state) => {
+        const mergedMessages = mergeOlderMessages(
+          state.messages,
+          olderMessages,
+        );
+        const authUserId = useAuthStore.getState().authUser?._id;
+        const loadedReadByPartners = deriveReadByPartnersFromMessages(
+          olderMessages,
+          authUserId,
+        );
+
+        return {
+          messages: mergedMessages,
+          messagePagination: {
+            currentPage: pagination?.currentPage || nextPage,
+            hasMore: Boolean(pagination?.hasMore),
+          },
+          readByPartners: {
+            ...state.readByPartners,
+            ...loadedReadByPartners,
+          },
+        };
+      });
       return true;
     } catch (error) {
       if (requestId === messagesRequestId) {
-        toast.error(
-          getApiErrorMessage(error, "Failed to load older messages"),
-        );
+        toast.error(getApiErrorMessage(error, "Failed to load older messages"));
       }
       return false;
     } finally {
@@ -201,13 +224,15 @@ export const useChatStore = create((set, get) => ({
   },
 
   emitTyping: (receiverId) => {
-    const socket = useAuthStore.getState().socket;
-    socket?.emit("typing", { receiverId });
+    const id = normalizeId(receiverId);
+    if (!id) return;
+    useAuthStore.getState().socket?.emit("typing", { receiverId: id });
   },
 
   emitStopTyping: (receiverId) => {
-    const socket = useAuthStore.getState().socket;
-    socket?.emit("stopTyping", { receiverId });
+    const id = normalizeId(receiverId);
+    if (!id) return;
+    useAuthStore.getState().socket?.emit("stopTyping", { receiverId: id });
   },
 
   editMessage: async (messageId, text) => {
@@ -253,8 +278,9 @@ export const useChatStore = create((set, get) => ({
 
   subscribeToMessages: () => {
     const socket = useAuthStore.getState().socket;
-    if (!socket || get().isSubscribedToMessages) return;
+    if (!socket) return;
 
+    unregisterChatSocketHandlers(socket);
     registerChatSocketHandlers(socket, get, set, axiosInstance);
     set({ isSubscribedToMessages: true });
   },

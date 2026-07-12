@@ -12,9 +12,7 @@ export const validateEnv = () => {
   const missing = REQUIRED_ALWAYS.filter((key) => !process.env[key]);
 
   if (process.env.NODE_ENV === "production") {
-    missing.push(
-      ...REQUIRED_IN_PRODUCTION.filter((key) => !process.env[key]),
-    );
+    missing.push(...REQUIRED_IN_PRODUCTION.filter((key) => !process.env[key]));
   }
 
   if (missing.length > 0) {

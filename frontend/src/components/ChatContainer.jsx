@@ -9,28 +9,42 @@ import MessageSkeleton from "./skeletons/MessageSkeleton";
 import TypingIndicator from "./TypingIndicator";
 import { useAuthStore } from "../store/useAuthStore";
 import { formatDateDivider, groupMessagesByDate } from "../lib/utils";
+import { isPartnerTyping } from "../lib/conversation/typingState";
 import { AlertCircle, RefreshCw } from "lucide-react";
 
 const ChatContainer = () => {
-  const {
-    messages,
-    getMessages,
-    isMessagesLoading,
-    messagesError,
-    selectedUser,
-    loadOlderMessages,
-    isOlderMessagesLoading,
-    messagePagination,
-    typingUsers,
-  } = useChatStore();
+  // Subscribe with per-field selectors so typing/read socket updates re-render reliably.
+  const messages = useChatStore((state) => state.messages);
+  const getMessages = useChatStore((state) => state.getMessages);
+  const isMessagesLoading = useChatStore((state) => state.isMessagesLoading);
+  const messagesError = useChatStore((state) => state.messagesError);
+  const selectedUser = useChatStore((state) => state.selectedUser);
+  const loadOlderMessages = useChatStore((state) => state.loadOlderMessages);
+  const isOlderMessagesLoading = useChatStore(
+    (state) => state.isOlderMessagesLoading,
+  );
+  const messagePagination = useChatStore((state) => state.messagePagination);
+  const isTyping = useChatStore(
+    (state) =>
+      Boolean(state.selectedUser) &&
+      isPartnerTyping(state.typingUsers, state.selectedUser._id),
+  );
   const { authUser } = useAuthStore();
   const messageEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const loadMoreRef = useRef(null);
   const isLoadingOlderRef = useRef(false);
-
-  const isTyping = selectedUser && typingUsers[selectedUser._id];
   const groupedMessages = groupMessagesByDate(messages);
+
+  const messagesPanelClassName =
+    "flex-1 space-y-4 overflow-y-auto bg-gradient-to-b from-base-100/20 to-base-100/40 p-2 md:p-4";
+
+  const renderConversationFooter = () => (
+    <>
+      {isTyping && <TypingIndicator selectedUser={selectedUser} />}
+      <div ref={messageEndRef} />
+    </>
+  );
 
   useEffect(() => {
     if (selectedUser?._id) {
@@ -91,7 +105,10 @@ const ChatContainer = () => {
     return (
       <div className="flex flex-1 flex-col overflow-hidden">
         <ChatHeader />
-        <MessageSkeleton />
+        <div className={messagesPanelClassName}>
+          <MessageSkeleton />
+          {renderConversationFooter()}
+        </div>
         <MessageInput />
       </div>
     );
@@ -125,10 +142,7 @@ const ChatContainer = () => {
     <div className="flex flex-1 flex-col overflow-hidden">
       <ChatHeader />
 
-      <div
-        ref={messagesContainerRef}
-        className="flex-1 space-y-4 overflow-y-auto bg-gradient-to-b from-base-100/20 to-base-100/40 p-2 md:p-4"
-      >
+      <div ref={messagesContainerRef} className={messagesPanelClassName}>
         {messagePagination.hasMore && (
           <div
             ref={loadMoreRef}
@@ -166,9 +180,7 @@ const ChatContainer = () => {
           <EmptyConversation fullName={selectedUser.fullName} />
         )}
 
-        {isTyping && <TypingIndicator selectedUser={selectedUser} />}
-
-        <div ref={messageEndRef} />
+        {renderConversationFooter()}
       </div>
 
       <MessageInput />

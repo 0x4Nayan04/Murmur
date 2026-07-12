@@ -4,7 +4,9 @@ const TypingIndicator = ({ selectedUser }) => (
   <div
     className="flex justify-start mt-2"
     role="status"
+    aria-live="polite"
     aria-label={`${selectedUser.fullName} is typing`}
+    data-typing-indicator="true"
   >
     <div className="flex items-end gap-2">
       <UserAvatar

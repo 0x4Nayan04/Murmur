@@ -1,5 +1,4 @@
-const BASE64_IMAGE_REGEX =
-  /^data:image\/(jpeg|jpg|png|gif|webp);base64,/i;
+const BASE64_IMAGE_REGEX = /^data:image\/(jpeg|jpg|png|gif|webp);base64,/i;
 
 export const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
 

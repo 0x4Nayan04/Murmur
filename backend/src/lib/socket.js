@@ -116,29 +116,30 @@ const isTypingRateLimited = (socketId) => {
 };
 
 const isValidTypingTarget = (senderId, receiverId) => {
-  if (!receiverId || typeof receiverId !== "string") {
+  const receiverIdStr =
+    receiverId == null ? "" : String(receiverId).trim();
+
+  if (!receiverIdStr || !isValidObjectId(receiverIdStr)) {
     return false;
   }
 
-  if (!isValidObjectId(receiverId)) {
-    return false;
-  }
-
-  return receiverId !== senderId;
+  return receiverIdStr !== senderId;
 };
 
 const handleTypingEvent = (socket, receiverId, isTyping) => {
   const userId = socket.userId;
+  const receiverIdStr =
+    receiverId == null ? "" : String(receiverId).trim();
 
   if (isTypingRateLimited(socket.id)) {
     return;
   }
 
-  if (!isValidTypingTarget(userId, receiverId)) {
+  if (!isValidTypingTarget(userId, receiverIdStr)) {
     return;
   }
 
-  emitToUser(receiverId, "userTyping", {
+  emitToUser(receiverIdStr, "userTyping", {
     senderId: userId,
     isTyping,
   });

@@ -13,6 +13,7 @@ const MessageInput = () => {
     canSend,
     handleTextChange,
     handleImageChange,
+    handleInputFocus,
     removeImage,
     handleSendMessage,
   } = useMessageComposer({
@@ -57,6 +58,7 @@ const MessageInput = () => {
             }
             value={text}
             onChange={handleTextChange}
+            onFocus={handleInputFocus}
             disabled={isUploading}
           />
 

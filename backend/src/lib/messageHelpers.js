@@ -1,5 +1,9 @@
 import Message from "../models/message.model.js";
-import { isBase64Image, isCloudinaryUrl, assertBase64ImageSize } from "./imageValidation.js";
+import {
+  isBase64Image,
+  isCloudinaryUrl,
+  assertBase64ImageSize,
+} from "./imageValidation.js";
 
 export class MessageNotFoundError extends Error {
   constructor() {
@@ -58,9 +62,7 @@ export const resolveMessageImageUrl = async (image, cloudinary) => {
 
   if (image.startsWith("http://") || image.startsWith("https://")) {
     if (!isCloudinaryUrl(image)) {
-      throw new InvalidImageError(
-        "Only Cloudinary image URLs are allowed.",
-      );
+      throw new InvalidImageError("Only Cloudinary image URLs are allowed.");
     }
 
     return image;

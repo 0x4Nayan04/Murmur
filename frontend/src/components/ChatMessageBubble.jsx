@@ -17,25 +17,36 @@ const MessageMeta = ({ createdAt, isOwnMessage, message, partnerHasRead }) => {
   const isRead = message.isRead || partnerHasRead;
 
   return (
-  <div className="mt-0.5 flex items-center justify-end gap-1 text-right text-[10px] opacity-70">
-    {message.isEdited && !message.isDeleted && (
-      <span className="italic">edited</span>
-    )}
-    <time dateTime={createdAt}>{formatMessageTime(createdAt)}</time>
-    {isOwnMessage &&
-      !message.isDeleted &&
-      (message.isPending ? (
-        <Loader size={12} className="animate-spin" aria-hidden="true" />
-      ) : isRead ? (
-        <CheckCheck
-          size={12}
-          className="text-primary-content"
-          aria-label="Read"
-        />
-      ) : (
-        <Check size={12} className="text-primary-content/60" aria-label="Sent" />
-      ))}
-  </div>
+    <div className="mt-0.5 flex items-center justify-end gap-1 text-right text-[10px] opacity-70">
+      {message.isEdited && !message.isDeleted && (
+        <span className="italic">edited</span>
+      )}
+      <time dateTime={createdAt}>{formatMessageTime(createdAt)}</time>
+      {isOwnMessage &&
+        !message.isDeleted &&
+        (message.isPending ? (
+          <Loader
+            size={12}
+            className="animate-spin"
+            aria-label="Sending"
+            data-message-status="sending"
+          />
+        ) : isRead ? (
+          <CheckCheck
+            size={12}
+            className="text-primary-content"
+            aria-label="Read"
+            data-message-status="read"
+          />
+        ) : (
+          <Check
+            size={12}
+            className="text-primary-content/60"
+            aria-label="Sent"
+            data-message-status="sent"
+          />
+        ))}
+    </div>
   );
 };
 

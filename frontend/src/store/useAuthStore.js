@@ -129,6 +129,7 @@ export const useAuthStore = create((set, get) => ({
 
     newSocket.on("connect", () => {
       set({ isSocketConnected: true });
+      useChatStore.getState().subscribeToMessages();
     });
 
     newSocket.on("disconnect", () => {

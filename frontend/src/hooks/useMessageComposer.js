@@ -1,9 +1,6 @@
 import { useRef, useReducer, useEffect } from "react";
 import toast from "react-hot-toast";
-import {
-  uploadToCloudinary,
-  validateImageFile,
-} from "../lib/cloudinary";
+import { uploadToCloudinary, validateImageFile } from "../lib/cloudinary";
 import { getApiErrorMessage } from "../lib/utils";
 
 const initialInputState = {
@@ -95,18 +92,29 @@ export const useMessageComposer = ({
     };
   }, [selectedUser, emitStopTyping]);
 
-  const handleTextChange = (e) => {
-    dispatch({ type: "SET_TEXT", payload: e.target.value });
-    if (!selectedUser) return;
-
-    emitTyping(selectedUser._id);
+  const scheduleStopTyping = (receiverId) => {
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
 
     typingTimeoutRef.current = setTimeout(() => {
-      emitStopTyping(selectedUser._id);
+      emitStopTyping(receiverId);
     }, 2000);
+  };
+
+  const handleTextChange = (e) => {
+    dispatch({ type: "SET_TEXT", payload: e.target.value });
+    if (!selectedUser) return;
+
+    emitTyping(selectedUser._id);
+    scheduleStopTyping(selectedUser._id);
+  };
+
+  const handleInputFocus = () => {
+    if (!selectedUser) return;
+
+    emitTyping(selectedUser._id);
+    scheduleStopTyping(selectedUser._id);
   };
 
   const handleImageChange = (e) => {
@@ -187,6 +195,7 @@ export const useMessageComposer = ({
     canSend: Boolean(text.trim() || imagePreview),
     handleTextChange,
     handleImageChange,
+    handleInputFocus,
     removeImage,
     handleSendMessage,
   };

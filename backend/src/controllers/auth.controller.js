@@ -2,7 +2,10 @@ import { generateToken, clearAuthCookie } from "../lib/utils.js";
 import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import cloudinary from "../lib/cloudinary.js";
-import { isBase64Image, assertBase64ImageSize } from "../lib/imageValidation.js";
+import {
+  isBase64Image,
+  assertBase64ImageSize,
+} from "../lib/imageValidation.js";
 
 const toPublicUser = (user) => ({
   _id: user._id,
