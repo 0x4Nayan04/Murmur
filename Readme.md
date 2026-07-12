@@ -15,8 +15,8 @@
 
 ### Core Functionality
 
-- **Real-time messaging** powered by Socket.IO with sub-second latency
-- **Secure authentication** with JWT protection and bcrypt password hashing
+- **Real-time messaging** powered by Socket.IO with authenticated delivery
+- **JWT-cookie authentication** with bcrypt password hashing
 - **Image sharing** with direct Cloudinary uploads (5MB limit, optimized
   compression)
 - **Typing indicators** with smart 2-second timeout for enhanced UX
@@ -37,7 +37,7 @@
 
 - **Input validation** with comprehensive Zod schemas
 - **CORS protection** with environment-based configuration
-- **Production-ready** error handling and logging
+- **Structured** error handling, request logging, and graceful shutdown
 - **Secure cookie** configuration for cross-origin deployment
 
 ## Technology Stack
@@ -171,6 +171,12 @@ Create `.env` file in the `frontend/` directory:
 # API Configuration
 VITE_API_URL=http://localhost:5001
 ```
+
+## Deployment
+
+The production frontend is available at [mumur.nayanswarnkar.com](https://mumur.nayanswarnkar.com/). The frontend deployment includes an SPA fallback so direct navigation to client routes such as `/login` resolves to the React application.
+
+The deployed chat flow supports authenticated Socket.IO delivery, typing indicators, read receipts, message editing, and soft-delete tombstones. Presence and event routing use an in-memory single-instance map; a shared Socket.IO adapter is required before scaling the backend horizontally.
 
 ## Project Architecture
 
