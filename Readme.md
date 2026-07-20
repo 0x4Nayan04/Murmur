@@ -19,7 +19,7 @@
 - **JWT-cookie authentication** with bcrypt password hashing
 - **Image sharing** with direct Cloudinary uploads (5MB limit, optimized
   compression)
-- **Typing indicators** with smart 2-second timeout for enhanced UX
+- **Typing indicators** with smart 2-second client timeout and server-side rate limiting
 - **Online presence** tracking with automatic status updates
 - **Message read receipts** and delivery status indicators
 
@@ -36,7 +36,9 @@
 ### Security & Performance
 
 - **Input validation** with comprehensive Zod schemas
-- **CORS protection** with environment-based configuration
+- **Rate limiting** on auth (10 req / 15 min), upload signatures (30 req / 15 min), and typing events (20 / 10 s per socket)
+- **Helmet** security headers and **CORS** with environment-based configuration
+- **Fail-fast** environment validation on backend boot
 - **Structured** error handling, request logging, and graceful shutdown
 - **Secure cookie** configuration for cross-origin deployment
 
@@ -61,6 +63,8 @@
 - **Socket.IO** server for real-time event handling
 - **JWT** for stateless authentication
 - **Zod** for runtime type validation and API security
+- **express-rate-limit** for auth and upload abuse protection
+- **Helmet** for HTTP security headers
 - **Cloudinary** for optimized image storage and delivery
 - **bcrypt.js** for secure password hashing
 - **CORS** middleware with environment-based configuration
@@ -195,11 +199,18 @@ murmur/
 │   │   ├── lib/                 # Utilities & configurations
 │   │   │   ├── cloudinary.js
 │   │   │   ├── db.js
+│   │   │   ├── imageValidation.js
+│   │   │   ├── logger.js
+│   │   │   ├── messageHelpers.js
 │   │   │   ├── socket.js
 │   │   │   ├── utils.js
+│   │   │   ├── validateEnv.js
 │   │   │   └── validation.js
 │   │   ├── middleware/
 │   │   │   ├── auth.middleware.js
+│   │   │   ├── error.middleware.js
+│   │   │   ├── rateLimit.middleware.js
+│   │   │   ├── requestLogging.middleware.js
 │   │   │   └── validation.middleware.js
 │   │   ├── models/
 │   │   │   ├── user.model.js
@@ -215,17 +226,33 @@ murmur/
 ├── frontend/                     # React.js client application
 │   ├── src/
 │   │   ├── components/
+│   │   │   ├── AppRoutes.jsx
 │   │   │   ├── AuthImagePattern.jsx
 │   │   │   ├── ChatContainer.jsx
 │   │   │   ├── ChatHeader.jsx
+│   │   │   ├── ChatMessageBubble.jsx
+│   │   │   ├── ConnectionBanner.jsx
+│   │   │   ├── EmptyConversation.jsx
+│   │   │   ├── ErrorBoundary.jsx
 │   │   │   ├── MessageInput.jsx
 │   │   │   ├── Navbar.jsx
 │   │   │   ├── NoChatSelected.jsx
+│   │   │   ├── OnlineStatus.jsx
 │   │   │   ├── Sidebar.jsx
+│   │   │   ├── SidebarUserItem.jsx
 │   │   │   ├── ThemeToggle.jsx
-│   │   │   └── skeletons/
-│   │   │       ├── MessageSkeleton.jsx
-│   │   │       └── SidebarSkeleton.jsx
+│   │   │   ├── TypingIndicator.jsx
+│   │   │   ├── UserAvatar.jsx
+│   │   │   ├── skeletons/
+│   │   │   │   ├── MessageSkeleton.jsx
+│   │   │   │   └── SidebarSkeleton.jsx
+│   │   │   └── ui/
+│   │   │       ├── ConfirmDialog.jsx
+│   │   │       ├── EmptyState.jsx
+│   │   │       ├── FormFieldError.jsx
+│   │   │       └── ImageLightbox.jsx
+│   │   ├── hooks/
+│   │   │   └── useMessageComposer.js
 │   │   ├── pages/
 │   │   │   ├── HomePage.jsx
 │   │   │   ├── LoginPage.jsx
@@ -237,8 +264,15 @@ murmur/
 │   │   │   └── useThemeStore.js
 │   │   ├── lib/
 │   │   │   ├── axios.js
+│   │   │   ├── avatar.js
 │   │   │   ├── cloudinary.js
-│   │   │   └── utils.js
+│   │   │   ├── config.js
+│   │   │   ├── sessionEvents.js
+│   │   │   ├── utils.js
+│   │   │   └── conversation/
+│   │   │       ├── helpers.js
+│   │   │       ├── readState.js
+│   │   │       └── typingState.js
 │   │   ├── index.css
 │   │   ├── App.jsx
 │   │   └── main.jsx
@@ -335,7 +369,7 @@ socket.on("messageDeleted", ({ messageId }) => {
 
 ### User Experience Features
 
-- **Smart typing indicators** with 2-second auto-timeout to prevent stuck states
+- **Smart typing indicators** with 2-second client auto-timeout and server rate limit (20 events / 10 s) to prevent stuck or spammy states
 - **Ease-out motion** for typing dots and empty-state icons (`animate-ease-out-dot`, `animate-ease-out-float` in `index.css`) instead of bouncy defaults
 - **Online presence system** with real-time status updates and connection
   handling
@@ -350,7 +384,9 @@ socket.on("messageDeleted", ({ messageId }) => {
 
 - **JWT authentication** with secure httpOnly cookies
 - **Comprehensive input validation** using Zod schemas on both client and server
-- **CORS protection** with environment-specific allowed origins
+- **Rate limiting** via `express-rate-limit` on login/signup and upload signatures; in-memory typing event limits on Socket.IO
+- **Helmet** HTTP security headers; **CORS** with environment-specific allowed origins
+- **Fail-fast env validation** so the API will not boot in production with missing secrets
 - **XSS protection** through proper data sanitization
 - **Password security** with bcrypt hashing (10 salt rounds)
 
